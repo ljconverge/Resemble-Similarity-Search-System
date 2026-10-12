@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Results — LSH Search</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="navbar"><div class="brand">LSH<span>Search</span></div>
+<nav><a href="/">Analyze</a><a class="active" href="/results">Results</a><a href="/performance">Performance</a></nav></header>
+
+<main class="container">
+<section class="page-head"><div><p class="eyebrow">ANALYSIS COMPLETE</p><h1>Similarity results</h1><p class="subtext">Demo results for {{ count }} uploaded documents at a {{ threshold }}% threshold.</p></div><a class="outline-btn" href="/">← New analysis</a></section>
+
+<div class="stats-row">
+<div class="stat"><span>Documents</span><strong>4</strong></div>
+<div class="stat"><span>Candidate pairs</span><strong>7</strong></div>
+<div class="stat"><span>Near duplicates</span><strong>3</strong></div>
+<div class="stat"><span>Threshold</span><strong>{{ threshold }}%</strong></div>
+</div>
+
+<section class="card">
+<div class="section-heading"><div><h2>Detected similar pairs</h2><p>Constant demo data for UI development.</p></div><span class="pill">LSH VERIFIED</span></div>
+<table>
+<thead><tr><th>Document pair</th><th>Similarity</th><th>Shared buckets</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><strong>doc_01.txt</strong> ↔ <strong>doc_03.txt</strong></td><td>94.7%</td><td>3</td><td><span class="status good">Near duplicate</span></td></tr>
+<tr><td><strong>doc_02.txt</strong> ↔ <strong>doc_04.txt</strong></td><td>88.2%</td><td>2</td><td><span class="status good">Near duplicate</span></td></tr>
+<tr><td><strong>doc_01.txt</strong> ↔ <strong>doc_04.txt</strong></td><td>81.6%</td><td>2</td><td><span class="status good">Near duplicate</span></td></tr>
+<tr><td><strong>doc_02.txt</strong> ↔ <strong>doc_03.txt</strong></td><td>76.4%</td><td>1</td><td><span class="status neutral">Below threshold</span></td></tr>
+</tbody>
+</table>
+</section>
+
+<section class="two-col">
+<div class="card"><h2>How this result was produced</h2><div class="timeline">
+<div><b>1</b><p>Documents were cleaned and converted into shingles.</p></div>
+<div><b>2</b><p>MinHash signatures were generated.</p></div>
+<div><b>3</b><p>LSH placed signature bands into buckets.</p></div>
+<div><b>4</b><p>Candidate pairs were verified with Jaccard similarity.</p></div>
+</div></div>
+<div class="card"><h2>Selected pair</h2><p class="muted">doc_01.txt ↔ doc_03.txt</p><div class="big-score">94.7%</div><p>Similarity score is above the selected {{ threshold }}% threshold.</p><a class="text-link" href="/performance">View performance →</a></div>
+</section>
+</main>
+</body></html>
