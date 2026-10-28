@@ -77,10 +77,19 @@
 </section>
 {% endif %}
 
+{% set missed = analysis.brute_force.pairs|rejectattr("found_by_lsh")|list if analysis.brute_force else [] %}
+{% if missed %}
+<section class="card warning-card">
+<h2>Missed by LSH ({{ missed|length }})</h2>
+<p class="muted">Brute force found these pairs at or above {{ analysis.metrics.threshold }}%, but they never became LSH candidates, so they could not be verified. Try more bands (fewer rows per band).</p>
+<ul>{% for p in missed %}<li>{{ p.doc_a }} ↔ {{ p.doc_b }}: {{ "%.2f"|format(p.similarity) }}%</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
 <section class="two-col">
 <div class="card"><h2>Documents processed</h2><div class="document-list">
 {% for doc in analysis.documents %}
-<div class="document-item"><div><strong>{{ doc.name }}</strong><small>{{ doc.characters }} cleaned characters</small></div><span>{{ doc.shingles }} shingles</span></div>
+<div class="document-item"><div><strong>{{ doc.name }}</strong><small>{{ doc.words }} words · {{ doc.characters }} cleaned characters</small></div><span>{{ doc.shingles }} shingles</span></div>
 {% endfor %}
 </div></div>
 <div class="card"><h2>LSH configuration</h2>
@@ -88,7 +97,9 @@
 <div><span>MinHash values</span><strong>{{ analysis.metrics.num_hashes }}</strong></div>
 <div><span>Bands</span><strong>{{ analysis.metrics.bands }}</strong></div>
 <div><span>Rows per band</span><strong>{{ analysis.metrics.rows_per_band }}</strong></div>
-<div><span>Shingle size</span><strong>{{ analysis.metrics.shingle_size }} characters</strong></div>
+<div><span>Shingles</span><strong>{{ analysis.metrics.shingle_size }} {{ analysis.metrics.shingle_unit }}</strong></div>
+<div><span>MinHash method</span><strong>{{ analysis.metrics.minhash_method }}</strong></div>
+<div><span>LSH threshold (approx.)</span><strong>{{ analysis.metrics.approx_lsh_threshold }}%</strong></div>
 <div><span>Buckets created</span><strong>{{ analysis.metrics.bucket_count }}</strong></div>
 <div><span>Buckets with 2+ documents</span><strong>{{ analysis.metrics.collision_bucket_count }}</strong></div>
 </div>

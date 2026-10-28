@@ -1,12 +1,10 @@
-"""Flask UI for dynamic PDF similarity search using the project's LSH implementation."""
+"""Flask UI: LSH vs brute-force near-duplicate search, using Algorithm/lsh_engine.py."""
 
-from collections import Counter
 from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
 import os
 import sys
-from itertools import combinations
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
@@ -16,7 +14,7 @@ ALGORITHM_DIR = BASE_DIR / "Algorithm"
 DOCUMENT_DIR = BASE_DIR / "Document"
 sys.path.insert(0, str(ALGORITHM_DIR))
 
-from lsh import generate_candidates  # noqa: E402
+import lsh_engine as engine  # noqa: E402  (the one algorithm file)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "local-development-key-change-me")
@@ -28,8 +26,9 @@ app.config["MAX_PDF_COUNT"] = 30
 # objects into the session cookie or saving uploaded PDFs to disk.
 ANALYSIS_CACHE = {}
 MAX_CACHED_ANALYSES = 10
-NUM_HASHES = 100
-SHINGLE_SIZE = 9
+NUM_HASHES = engine.NUM_HASHES
+ALLOWED_BANDS = {10, 20, 25, 50, 100}
+ALLOWED_SUFFIXES = {".pdf", ".txt"}
 
 
 def _unique_display_name(filename, used_names):
@@ -65,25 +64,29 @@ def _read_uploaded_documents(files):
 
     if len(files) > app.config["MAX_PDF_COUNT"]:
         raise ValueError(
-            f"Please upload no more than {app.config['MAX_PDF_COUNT']} PDF files at once."
+            f"Please upload no more than {app.config['MAX_PDF_COUNT']} files at once."
         )
 
     for uploaded_file in files:
         if not uploaded_file or not uploaded_file.filename:
             continue
-        if Path(uploaded_file.filename).suffix.lower() != ".pdf":
-            warnings.append(f"{uploaded_file.filename}: skipped because it is not a PDF.")
+        suffix = Path(uploaded_file.filename).suffix.lower()
+        if suffix not in ALLOWED_SUFFIXES:
+            warnings.append(f"{uploaded_file.filename}: skipped (only .pdf and .txt are supported).")
             continue
 
         display_name = _unique_display_name(uploaded_file.filename, used_names)
         try:
             uploaded_file.stream.seek(0)
-            raw_text = _extract_pdf(uploaded_file.stream)
+            if suffix == ".txt":
+                raw_text = uploaded_file.stream.read().decode("utf-8", errors="ignore")
+            else:
+                raw_text = _extract_pdf(uploaded_file.stream)
             if raw_text.strip():
                 documents[display_name] = raw_text
             else:
                 warnings.append(
-                    f"{display_name}: no selectable text found; scanned PDFs need OCR."
+                    f"{display_name}: no text found (scanned PDFs need OCR)."
                 )
         except Exception as exc:
             warnings.append(f"{display_name}: could not read this PDF ({exc}).")
@@ -101,7 +104,7 @@ def _read_sample_documents():
 
     if not pdf_paths:
         raise ValueError(
-            "No sample PDFs were found in the Document folder. Upload PDFs instead."
+            "No sample PDFs were found in the Document folder. Upload files instead."
         )
 
     for path in pdf_paths:
@@ -125,129 +128,25 @@ def _read_sample_documents():
     return documents, warnings
 
 
-def _run_lsh_analysis(raw_documents, threshold_percent, bands, warnings, source_label, started_at=None):
-    """Run the notebook-compatible preprocessing/MinHash pipeline and LSH."""
-    from preprocessing_runtime import (
-        character_shingles,
-        exact_jaccard,
-        generate_signature_matrix,
-        preprocess_text,
-        text_to_hashed_shingles,
-    )
-
-    started = started_at if started_at is not None else perf_counter()
-    cleaned_documents = {}
-    raw_shingle_sets = {}
-    hashed_shingles_by_doc = {}
-    document_details = []
-
-    for name, raw_text in raw_documents.items():
-        cleaned = preprocess_text(raw_text)
-        shingles = character_shingles(cleaned, k=SHINGLE_SIZE)
-        if not shingles:
-            warnings.append(
-                f"{name}: skipped because its cleaned text is shorter than "
-                f"the {SHINGLE_SIZE}-character shingle size."
-            )
-            continue
-
-        # Keep the original notebook's hashing and MinHash input representation.
-        hashed_shingles = text_to_hashed_shingles(cleaned, k=SHINGLE_SIZE)
-        if len(hashed_shingles) == 0:
-            warnings.append(f"{name}: skipped because no shingles were generated.")
-            continue
-
-        cleaned_documents[name] = cleaned
-        raw_shingle_sets[name] = shingles
-        hashed_shingles_by_doc[name] = hashed_shingles
-        document_details.append({
-            "name": name,
-            "characters": len(cleaned),
-            "shingles": len(shingles),
-        })
-
-    if not cleaned_documents:
-        raise ValueError(
-            "No usable text documents were found. Try selectable-text PDFs "
-            "or check that the PDFs contain enough text."
-        )
-
-    # Notebook signature matrix shape is (num_hashes, num_documents).
-    names = list(cleaned_documents.keys())
-    signature_matrix = generate_signature_matrix(
-        [hashed_shingles_by_doc[name] for name in names],
+def _run_lsh_analysis(raw_documents, threshold_percent, bands, warnings, source_label,
+                      shingle_mode=engine.DEFAULT_MODE, shingle_size=None,
+                      minhash_method="fast", extraction_ms=0.0):
+    """Run LSH and the brute-force baseline on the SAME shingle sets (lsh_engine)."""
+    result = engine.run_analysis(
+        raw_documents,
+        threshold=threshold_percent / 100.0,
+        bands=bands,
+        shingle_mode=shingle_mode,
+        k=shingle_size,
         num_hashes=NUM_HASHES,
+        minhash_method=minhash_method,
+        run_brute_force=True,
     )
-    signatures = {
-        name: signature_matrix[:, index].tolist()
-        for index, name in enumerate(names)
-    }
-
-    candidates, buckets = generate_candidates(signatures, bands=bands)
-
-    # Count how many distinct bands each candidate pair shares.
-    pair_bucket_counts = Counter()
-    for document_ids in buckets.values():
-        if len(document_ids) > 1:
-            for pair in combinations(sorted(document_ids), 2):
-                pair_bucket_counts[pair] += 1
-
-    threshold = threshold_percent / 100.0
-    pair_rows = []
-    for doc_a, doc_b in candidates:
-        similarity = exact_jaccard(
-            raw_shingle_sets[doc_a],
-            raw_shingle_sets[doc_b],
-        )
-        pair_rows.append({
-            "doc_a": doc_a,
-            "doc_b": doc_b,
-            "similarity": round(similarity * 100, 2),
-            "shared_buckets": pair_bucket_counts[(doc_a, doc_b)],
-            "is_match": similarity >= threshold,
-            "status": "Near duplicate" if similarity >= threshold else "Below threshold",
-        })
-
-    pair_rows.sort(key=lambda row: (-row["similarity"], row["doc_a"], row["doc_b"]))
-    near_duplicate_count = sum(1 for row in pair_rows if row["is_match"])
-    document_count = len(names)
-    possible_pairs = document_count * (document_count - 1) // 2
-    candidate_count = len(candidates)
-    candidate_reduction = (
-        (1 - candidate_count / possible_pairs) * 100
-        if possible_pairs
-        else 100.0
-    )
-    collision_bucket_count = sum(1 for ids in buckets.values() if len(ids) > 1)
-    elapsed_ms = (perf_counter() - started) * 1000
-
-    return {
-        "analysis_id": uuid4().hex,
-        "source_label": source_label,
-        "documents": document_details,
-        # The main results table contains only pairs that meet the exact
-        # Jaccard threshold. Rejected LSH candidates remain available in a
-        # separate diagnostic table so they cannot be mistaken for matches.
-        "pairs": [row for row in pair_rows if row["is_match"]],
-        "rejected_pairs": [row for row in pair_rows if not row["is_match"]],
-        "candidate_pairs": pair_rows,
-        "warnings": warnings,
-        "metrics": {
-            "document_count": document_count,
-            "candidate_count": candidate_count,
-            "near_duplicate_count": near_duplicate_count,
-            "threshold": threshold_percent,
-            "bands": bands,
-            "rows_per_band": NUM_HASHES // bands,
-            "num_hashes": NUM_HASHES,
-            "shingle_size": SHINGLE_SIZE,
-            "possible_pairs": possible_pairs,
-            "candidate_reduction": round(candidate_reduction, 2),
-            "bucket_count": len(buckets),
-            "collision_bucket_count": collision_bucket_count,
-            "elapsed_ms": round(elapsed_ms, 2),
-        },
-    }
+    result["warnings"] = list(warnings) + result["warnings"]
+    result["metrics"]["extraction_ms"] = round(extraction_ms, 2)
+    result["analysis_id"] = uuid4().hex
+    result["source_label"] = source_label
+    return result
 
 
 def _store_analysis(result):
@@ -268,32 +167,47 @@ def _current_analysis():
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
-        analysis_started = perf_counter()
         try:
-            threshold = int(request.form.get("threshold", "80"))
-            bands = int(request.form.get("bands", "20"))
+            try:
+                threshold = int(request.form.get("threshold", "80"))
+                bands = int(request.form.get("bands", "20"))
+                shingle_mode = request.form.get("shingle_mode", engine.DEFAULT_MODE)
+                shingle_size = int(request.form.get(
+                    "shingle_size", engine.DEFAULT_K.get(shingle_mode, 3)))
+            except ValueError:
+                raise ValueError("Threshold, bands and shingle size must be whole numbers.")
+            minhash_method = request.form.get("minhash_method", "fast")
             if not 0 <= threshold <= 100:
                 raise ValueError("Similarity threshold must be between 0% and 100%.")
-            if bands not in {10, 20, 25, 50, 100}:
+            if bands not in ALLOWED_BANDS:
                 raise ValueError("Choose one of the available band settings.")
             if NUM_HASHES % bands != 0:
                 raise ValueError("The number of MinHash values must divide evenly into bands.")
+            if minhash_method not in engine.MINHASH_METHODS:
+                raise ValueError("Choose a valid MinHash method.")
+            engine.validate_shingle_settings(shingle_mode, shingle_size)
+
+            extraction_started = perf_counter()
 
             source = request.form.get("source", "upload")
             if source == "samples":
                 raw_documents, warnings = _read_sample_documents()
-                source_label = "PDFs in the Document folder"
+                source_label = "Files in the Document folder"
             else:
-                files = request.files.getlist("documents")
+                files = [f for f in request.files.getlist("documents") if f and f.filename]
+                if not files:
+                    raise ValueError("Please choose at least one PDF or TXT file to upload.")
                 raw_documents, warnings = _read_uploaded_documents(files)
-                source_label = "Uploaded PDFs"
+                source_label = "Uploaded files"
 
             if not raw_documents:
                 detail = " ".join(warnings[:3])
                 raise ValueError(
-                    "No readable PDF text was found. Upload selectable-text PDFs. "
+                    "No readable text was found. Upload selectable-text PDFs or TXT files. "
                     + detail
                 )
+
+            extraction_ms = (perf_counter() - extraction_started) * 1000
 
             result = _run_lsh_analysis(
                 raw_documents=raw_documents,
@@ -301,7 +215,10 @@ def index():
                 bands=bands,
                 warnings=warnings,
                 source_label=source_label,
-                started_at=analysis_started,
+                shingle_mode=shingle_mode,
+                shingle_size=shingle_size,
+                minhash_method=minhash_method,
+                extraction_ms=extraction_ms,
             )
             _store_analysis(result)
             return redirect(url_for("results"))
@@ -323,7 +240,7 @@ def index():
             )
             return redirect(url_for("index"))
 
-    return render_template("index.html")
+    return render_template("index.html", default_k=engine.DEFAULT_K, k_limits=engine.K_LIMITS)
 
 
 @app.route("/results")

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="860c84e1-4e42-4054-bbc0-77028de653c9" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/Algorithm/lsh_engine.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/Algorithm/lsh.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/Algorithm/preprocessing.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Algorithm/preprocessing.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/Algorithm/preprocessing_runtime.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc1.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc1.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc10.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc10.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc2.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc2.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc3.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc3.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc4.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc4.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc5.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc5.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc6.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc6.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc7.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc7.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc8.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc8.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc9.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc9.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/app.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/requirements.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/static/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/templates/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/templates/performance.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSH_Algo/templates/results.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/brute_force/brute_force.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/brute_force/brute_force_explained.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/brute_force/brute_force_k1.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/brute_force/brute_force_k3.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/brute_force/brute_force_k9.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/brute_force/compare_k1_k3.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/brute_force/extract_books.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/brute_force/pdf_extraction_methods.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/brute_force/results_k1/pairs_k1.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/brute_force/results_k1/report_k1.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/brute_force/results_k1/similarity_matrix_k1.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/brute_force/results_k3/pairs_k3.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/brute_force/results_k3/report_k3.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/brute_force/results_k3/similarity_matrix_k3.csv" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_D:/Daiict 1st sem/DSA project/Resemble-Similarity-Search-System" value="3LC8S6OpukD58zye3KQAoJ0l654" />
+    </persistenceIdMap>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="main" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;ljconverge&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/lakshitapagaria31/Resemble-Similarity-Search-System.git&quot;,
+    &quot;accountId&quot;: &quot;a81586da-7b37-4432-bf2a-cc28d2eea276&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 3,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3LC8S6OpukD58zye3KQAoJ0l654" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "algo-creation",
+    "last_opened_file_path": "D:/Daiict 1st sem/DSA project/Resemble-Similarity-Search-System/static",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\Daiict 1st sem\DSA project\Resemble-Similarity-Search-System\static" />
+      <recent name="D:\Daiict 1st sem\DSA project\Resemble-Similarity-Search-System\Algorithm" />
+      <recent name="D:\Daiict 1st sem\DSA project\Resemble-Similarity-Search-System\brute_force" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Daiict 1st sem\DSA project\Resemble-Similarity-Search-System" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-c59985aa861c-c2ffad84badb-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-261.24374.152" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="860c84e1-4e42-4054-bbc0-77028de653c9" name="Changes" comment="" />
+      <created>1792946686282</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1792946686282</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

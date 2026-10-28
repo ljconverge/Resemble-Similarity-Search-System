@@ -45,8 +45,17 @@ from text_quality import analyze, classify
 
 # ---------------------------------------------------------------- backends
 
+def _import_pymupdf():
+    """New PyMuPDF versions are imported as 'pymupdf'; 'fitz' is the deprecated name."""
+    try:
+        import pymupdf as fitz
+    except ImportError:
+        import fitz
+    return fitz
+
+
 def _pages_pymupdf(path: Path) -> list[str]:
-    import fitz  # PyMuPDF
+    fitz = _import_pymupdf()
     with fitz.open(path) as doc:
         return [page.get_text("text") for page in doc]
 
@@ -92,7 +101,7 @@ def available_backends():
     """Text-layer methods that can run on this machine, fastest first."""
     out = []
     try:
-        import fitz  # noqa: F401
+        _import_pymupdf()
         out.append(("pymupdf", _pages_pymupdf))
     except ImportError:
         pass

@@ -142,7 +142,7 @@ def main():
 
     # ---- 4. agreement -------------------------------------------------
     emit("4. Do the two methods agree?")
-    emit(f"  Spearman rank correlation of the 45-pair rankings: {pearson(rank3, rank1):.3f}"
+    emit(f"  Spearman rank correlation of the {len(keys)}-pair rankings: {pearson(rank3, rank1):.3f}"
          if len(keys) > 2 else "  (too few pairs)")
     top_n = min(6, len(keys))
     top3 = {keys[i] for i in sorted(range(len(keys)), key=lambda i: (-j3[i], keys[i]))[:top_n]}
