@@ -5,42 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="860c84e1-4e42-4054-bbc0-77028de653c9" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Algorithm/lsh_engine.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/Algorithm/lsh.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/Algorithm/preprocessing.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Algorithm/preprocessing.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/Algorithm/preprocessing_runtime.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc1.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc1.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc10.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc10.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc2.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc2.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc3.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc3.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc4.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc4.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc5.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc5.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc6.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc6.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc7.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc7.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc8.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc8.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/Document/Doc9.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/Document/Doc9.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/app.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/requirements.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/static/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/style.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/templates/index.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/templates/performance.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSH_Algo/templates/results.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/brute_force/brute_force.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/brute_force/brute_force_explained.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/brute_force/brute_force_k1.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/brute_force/brute_force_k3.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/brute_force/brute_force_k9.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/brute_force/compare_k1_k3.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/brute_force/extract_books.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/brute_force/pdf_extraction_methods.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/brute_force/results_k1/pairs_k1.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/brute_force/results_k1/report_k1.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/brute_force/results_k1/similarity_matrix_k1.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/brute_force/results_k3/pairs_k3.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/brute_force/results_k3/report_k3.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/brute_force/results_k3/similarity_matrix_k3.csv" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_patches.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Algorithm/lsh_engine.py" beforeDir="false" afterPath="$PROJECT_DIR$/Algorithm/lsh_engine.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/performance.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/performance.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/results.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/results.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -89,8 +60,8 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "algo-creation",
-    "last_opened_file_path": "D:/Daiict 1st sem/DSA project/Resemble-Similarity-Search-System/static",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "D:/Daiict 1st sem/DSA project/Resemble-Similarity-Search-System/templates",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -100,6 +71,7 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\Daiict 1st sem\DSA project\Resemble-Similarity-Search-System\templates" />
       <recent name="D:\Daiict 1st sem\DSA project\Resemble-Similarity-Search-System\static" />
       <recent name="D:\Daiict 1st sem\DSA project\Resemble-Similarity-Search-System\Algorithm" />
       <recent name="D:\Daiict 1st sem\DSA project\Resemble-Similarity-Search-System\brute_force" />

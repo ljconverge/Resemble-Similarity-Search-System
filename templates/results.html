@@ -38,7 +38,7 @@
 {% for pair in analysis.pairs %}
 <tr>
 <td><strong>{{ pair.doc_a }}</strong><br><span class="pair-separator">↔</span><strong>{{ pair.doc_b }}</strong></td>
-<td><strong>{{ "%.2f"|format(pair.similarity) }}%</strong><div class="score-track"><i style="width: {{ pair.similarity }}%"></i></div></td>
+<td><strong>{{ pair.similarity_text }}%</strong><div class="score-track"><i style="width: {{ pair.similarity }}%"></i></div></td>
 <td>{{ pair.shared_buckets }}</td>
 <td>{% if pair.is_match %}<span class="status good">Near duplicate</span>{% else %}<span class="status neutral">Below threshold</span>{% endif %}</td>
 </tr>
@@ -65,7 +65,7 @@
 {% for pair in analysis.rejected_pairs %}
 <tr>
 <td><strong>{{ pair.doc_a }}</strong><br><span class="pair-separator">↔</span><strong>{{ pair.doc_b }}</strong></td>
-<td><strong>{{ "%.2f"|format(pair.similarity) }}%</strong><div class="score-track"><i style="width: {{ pair.similarity }}%"></i></div></td>
+<td><strong>{{ pair.similarity_text }}%</strong><div class="score-track"><i style="width: {{ pair.similarity }}%"></i></div></td>
 <td>{{ pair.shared_buckets }}</td>
 <td><span class="status neutral">Below {{ analysis.metrics.threshold }}% threshold</span></td>
 </tr>
@@ -82,7 +82,7 @@
 <section class="card warning-card">
 <h2>Missed by LSH ({{ missed|length }})</h2>
 <p class="muted">Brute force found these pairs at or above {{ analysis.metrics.threshold }}%, but they never became LSH candidates, so they could not be verified. Try more bands (fewer rows per band).</p>
-<ul>{% for p in missed %}<li>{{ p.doc_a }} ↔ {{ p.doc_b }}: {{ "%.2f"|format(p.similarity) }}%</li>{% endfor %}</ul>
+<ul>{% for p in missed %}<li>{{ p.doc_a }} ↔ {{ p.doc_b }}: {{ p.similarity_text }}%</li>{% endfor %}</ul>
 </section>
 {% endif %}
 

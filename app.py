@@ -4,6 +4,7 @@ from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
 import os
+import re
 import sys
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
@@ -33,7 +34,11 @@ ALLOWED_SUFFIXES = {".pdf", ".txt"}
 
 def _unique_display_name(filename, used_names):
     """Keep uploaded file labels unique if two files share the same filename."""
-    safe_name = secure_filename(filename) or "document.pdf"
+    # PATCH 9: secure_filename() deletes every non-English letter ("日本.txt" -> "txt").
+    # Uploads are only read in memory, never saved, so only folder parts and
+    # characters that are unsafe to display are removed.
+    base = Path(filename.replace("\\", "/")).name
+    safe_name = re.sub(r'[\x00-\x1f<>:"/\\|?*]', "_", base).strip(" .") or "document.pdf"
     stem, suffix = Path(safe_name).stem, Path(safe_name).suffix or ".pdf"
     candidate = f"{stem}{suffix}"
     counter = 2
@@ -141,6 +146,7 @@ def _run_lsh_analysis(raw_documents, threshold_percent, bands, warnings, source_
         num_hashes=NUM_HASHES,
         minhash_method=minhash_method,
         run_brute_force=True,
+        timing_repeats=3 if minhash_method == "fast" else 1,   # PATCH 4
     )
     result["warnings"] = list(warnings) + result["warnings"]
     result["metrics"]["extraction_ms"] = round(extraction_ms, 2)

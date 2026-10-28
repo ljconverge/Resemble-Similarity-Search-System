@@ -147,24 +147,63 @@ input.addEventListener("change", () => {
 });
 const slider = document.getElementById("threshold");
 const thresholdValue = document.getElementById("threshold-value");
-slider.addEventListener("input", () => thresholdValue.textContent = slider.value);
 const bands = document.getElementById("bands");
 const bandValue = document.getElementById("band-value");
-bands.addEventListener("change", () => bandValue.textContent = bands.value);
 const kDefaults = {{ default_k|tojson }}, kLimits = {{ k_limits|tojson }};
 const mode = document.getElementById("shingle_mode"), kInput = document.getElementById("shingle_size");
 const shingleSummary = document.getElementById("shingle-summary");
+const mh = document.getElementById("minhash_method"), mhSummary = document.getElementById("minhash-summary");
 const unit = () => mode.value === "word" ? "words" : "characters";
-const refreshK = () => shingleSummary.textContent = `${kInput.value} ${unit()}`;
-mode.addEventListener("change", () => {
+
+// PATCH 1: every label is rebuilt from the real control values, so what you see
+// is what gets submitted - also after Back / reload, when the browser restores
+// old values without firing change events.
+function syncLabels() {
+    thresholdValue.textContent = slider.value;
+    bandValue.textContent = bands.value;
     kInput.min = kLimits[mode.value][0];
     kInput.max = kLimits[mode.value][1];
-    kInput.value = kDefaults[mode.value];
-    refreshK();
+    shingleSummary.textContent = `${kInput.value} ${unit()}`;
+    mhSummary.textContent = mh.value;
+}
+slider.addEventListener("input", syncLabels);
+bands.addEventListener("change", syncLabels);
+kInput.addEventListener("input", syncLabels);
+mh.addEventListener("change", syncLabels);
+
+// PATCH 2: switching word/char keeps a typed k if it is valid for the new type;
+// only an out-of-range k is replaced by that type's default.
+mode.addEventListener("change", () => {
+    const k = Number(kInput.value), [lo, hi] = kLimits[mode.value];
+    if (!Number.isInteger(k) || k < lo || k > hi) kInput.value = kDefaults[mode.value];
+    syncLabels();
 });
-kInput.addEventListener("input", refreshK);
-const mh = document.getElementById("minhash_method");
-mh.addEventListener("change", () => document.getElementById("minhash-summary").textContent = mh.value);
+
+// PATCH 11: one click = one run. Buttons are disabled while the analysis runs.
+// A disabled button is not sent with the form, so its value goes in a hidden field.
+const form = document.querySelector("form.analysis-card");
+const buttons = () => form.querySelectorAll("button[type=submit]");
+form.addEventListener("submit", (event) => {
+    const hidden = document.createElement("input");
+    hidden.type = "hidden";
+    hidden.name = "source";
+    hidden.value = event.submitter ? event.submitter.value : "upload";
+    form.appendChild(hidden);
+    if (event.submitter) {
+        event.submitter.dataset.label = event.submitter.innerHTML;
+        event.submitter.textContent = "Analyzing… please wait";
+    }
+    buttons().forEach(btn => btn.disabled = true);
+});
+window.addEventListener("pageshow", () => {   // coming back with the Back button
+    form.querySelectorAll("input[type=hidden][name=source]").forEach(el => el.remove());
+    buttons().forEach(btn => {
+        btn.disabled = false;
+        if (btn.dataset.label) { btn.innerHTML = btn.dataset.label; delete btn.dataset.label; }
+    });
+    syncLabels();
+});
+syncLabels();
 </script>
 </body>
 </html>

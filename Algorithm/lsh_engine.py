@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import random
 import re
+import statistics
 import string
 import time
 import unicodedata
@@ -70,6 +71,9 @@ def preprocess_text(text: str) -> str:
     text = text.replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
     text = text.lower()
     text = text.translate(_PUNCT_TABLE)
+    # PATCH 8: string.punctuation is ASCII only. Also delete Unicode punctuation
+    # (curly quotes, en/em dashes, bullets...) the same way, so "don’t" == "don't".
+    text = "".join(ch for ch in text if not unicodedata.category(ch).startswith("P"))
     return re.sub(r"\s+", " ", text).strip()
 
 
@@ -291,12 +295,19 @@ def evaluate(found_pairs, truth_pairs) -> dict:
     norm = lambda pairs: {frozenset(p[:2]) if not isinstance(p, frozenset) else p for p in pairs}
     found, truth = norm(found_pairs), norm(truth_pairs)
     tp = len(found & truth)
-    precision = tp / len(found) if found else 1.0
-    recall = tp / len(truth) if truth else 1.0
-    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    # PATCH 5: with nothing to find (or nothing found) a percentage is meaningless,
+    # so it is None (shown as "n/a") instead of a misleading 100%.
+    precision = round(tp / len(found), 4) if found else None
+    recall = round(tp / len(truth), 4) if truth else None
+    if recall is None:
+        f1 = None
+    elif tp == 0:
+        f1 = 0.0
+    else:
+        f1 = round(2 * precision * recall / (precision + recall), 4)
     return {"true_pairs": len(truth), "found_pairs": len(found), "true_positives": tp,
             "false_positives": len(found - truth), "false_negatives": len(truth - found),
-            "precision": round(precision, 4), "recall": round(recall, 4), "f1": round(f1, 4)}
+            "precision": precision, "recall": recall, "f1": f1}
 
 
 # ============================================================================
@@ -307,15 +318,28 @@ def _ms(seconds: float) -> float:
     return round(seconds * 1000, 3)
 
 
+def _pct_text(score: float, threshold: float) -> str:
+    """PATCH 7: score as a percentage with 2 decimals, but add decimals when
+    rounding would put it on the wrong side of the threshold (0.79996 -> "79.9960")."""
+    limit = round(threshold * 100, 6)
+    for decimals in (2, 4, 6, 8):
+        text = f"{score * 100:.{decimals}f}"
+        if (float(text) >= limit) == (score >= threshold):
+            return text
+    return text
+
+
 def run_analysis(raw_documents: dict, threshold: float = 0.8, bands: int = 20,
                  shingle_mode: str = DEFAULT_MODE, k: int | None = None,
                  num_hashes: int = NUM_HASHES, minhash_method: str = "fast",
-                 seed: int = 42, run_brute_force: bool = True) -> dict:
+                 seed: int = 42, run_brute_force: bool = True,
+                 timing_repeats: int = 1) -> dict:
     """raw_documents: {name: raw_text}. threshold in [0, 1].
 
-    Timing is fair: preprocessing + shingling is done ONCE, timed separately,
-    and shared by both engines. LSH time = MinHash + banding + verification.
-    Brute-force time = all-pairs Jaccard. PDF reading is never included.
+    Timing is fair: cleaning + shingling is done ONCE, timed separately, and
+    shared by both engines. LSH time = shingle hashing + MinHash + banding +
+    verification. Brute-force time = all-pairs Jaccard. PDF reading is never
+    included. Each engine is timed `timing_repeats` times; the median is reported.
     """
     k = DEFAULT_K[shingle_mode] if k is None else k
     validate_shingle_settings(shingle_mode, k)
@@ -337,31 +361,45 @@ def run_analysis(raw_documents: dict, threshold: float = 0.8, bands: int = 20,
         documents.append({"name": name, "characters": len(clean),
                           "words": len(clean.split()), "shingles": len(sh)})
     names = list(shingle_sets)
-    id_arrays = [shingle_ids(shingle_sets[n]) for n in names]
     t_prep = time.perf_counter() - t0
     if not names:
         raise ValueError("No usable text documents were found.")
+    if isinstance(timing_repeats, bool) or not isinstance(timing_repeats, int) or timing_repeats < 1:
+        raise ValueError("timing_repeats must be a positive integer.")
 
     # ---- LSH --------------------------------------------------------------
-    t1 = time.perf_counter()
-    sigs = minhash_signatures(id_arrays, num_hashes, minhash_method, seed)
-    t2 = time.perf_counter()
-    candidates, buckets = generate_candidates(dict(zip(names, sigs)), bands)
-    t3 = time.perf_counter()
-    scored, lsh_comparisons = verify_candidates(candidates, shingle_sets, threshold)
-    t4 = time.perf_counter()
+    # PATCH 3: turning shingles into numbers is needed only by LSH, so it is
+    #          now timed as LSH work (it used to sit in the shared time).
+    # PATCH 4: repeat and take the median; every repeat gives identical results.
+    runs = []
+    for _ in range(timing_repeats):
+        t1 = time.perf_counter()
+        id_arrays = [shingle_ids(shingle_sets[n]) for n in names]
+        t1b = time.perf_counter()
+        sigs = minhash_signatures(id_arrays, num_hashes, minhash_method, seed)
+        t2 = time.perf_counter()
+        candidates, buckets = generate_candidates(dict(zip(names, sigs)), bands)
+        t3 = time.perf_counter()
+        scored, lsh_comparisons = verify_candidates(candidates, shingle_sets, threshold)
+        t4 = time.perf_counter()
+        runs.append((t1b - t1, t2 - t1b, t3 - t2, t4 - t3, t4 - t1))
+    t_hash, t_minhash, t_band, t_verify, t_lsh = (statistics.median(c) for c in zip(*runs))
     band_counts = shared_band_counts(buckets)
     lsh_found = [r for r in scored if r[2] >= threshold]
 
     # ---- Brute force --------------------------------------------------------
     brute, evaluation, t_brute = None, None, None
     if run_brute_force:
-        t5 = time.perf_counter()
-        truth, bf_comparisons = brute_force_all_pairs(shingle_sets, threshold)
-        t_brute = time.perf_counter() - t5
+        bf_times = []
+        for _ in range(timing_repeats):
+            t5 = time.perf_counter()
+            truth, bf_comparisons = brute_force_all_pairs(shingle_sets, threshold)
+            bf_times.append(time.perf_counter() - t5)
+        t_brute = statistics.median(bf_times)
         evaluation = evaluate(lsh_found, truth)
         found_keys = {frozenset(r[:2]) for r in lsh_found}
         brute = {"pairs": [{"doc_a": a, "doc_b": b, "similarity": round(s * 100, 2),
+                            "similarity_text": _pct_text(s, threshold),
                             "found_by_lsh": frozenset((a, b)) in found_keys}
                            for a, b, s in truth],
                  "comparisons": bf_comparisons}
@@ -369,8 +407,8 @@ def run_analysis(raw_documents: dict, threshold: float = 0.8, bands: int = 20,
     n = len(names)
     possible = n * (n - 1) // 2
     rows = num_hashes // bands
-    t_lsh = t4 - t1
     rows_out = [{"doc_a": a, "doc_b": b, "similarity": round(s * 100, 2),
+                 "similarity_text": _pct_text(s, threshold),
                  "shared_buckets": band_counts[(a, b)], "is_match": s >= threshold,
                  "status": "Near duplicate" if s >= threshold else "Below threshold"}
                 for a, b, s in scored]
@@ -383,14 +421,18 @@ def run_analysis(raw_documents: dict, threshold: float = 0.8, bands: int = 20,
         "threshold": round(threshold * 100, 2), "bands": bands, "rows_per_band": rows,
         "num_hashes": num_hashes, "shingle_mode": shingle_mode, "shingle_size": k,
         "shingle_unit": "words" if shingle_mode == "word" else "characters",
-        "minhash_method": minhash_method, "seed": seed,
+        "minhash_method": minhash_method,
+        # PATCH 10: the notebook method always uses seeds 0..m-1, so no seed applies
+        "seed": seed if minhash_method == "fast" else None,
         "approx_lsh_threshold": round(approx_threshold(bands, rows) * 100, 1),
         "bucket_count": len(buckets),
         "collision_bucket_count": sum(1 for d in buckets.values() if len(d) > 1),
         "max_bucket_size": max((len(d) for d in buckets.values()), default=0),
-        "preprocessing_ms": _ms(t_prep), "minhash_ms": _ms(t2 - t1),
-        "banding_ms": _ms(t3 - t2), "verify_ms": _ms(t4 - t3), "lsh_ms": _ms(t_lsh),
-        "elapsed_ms": _ms(t_prep + t_lsh),
+        "preprocessing_ms": _ms(t_prep), "hashing_ms": _ms(t_hash), "minhash_ms": _ms(t_minhash),
+        "banding_ms": _ms(t_band), "verify_ms": _ms(t_verify), "lsh_ms": _ms(t_lsh),
+        "elapsed_ms": _ms(t_prep + t_lsh), "timing_repeats": timing_repeats,
+        # PATCH 6: share of LSH candidates that really were near-duplicates
+        "candidate_precision": round(len(lsh_found) / len(candidates), 4) if candidates else None,
     }
     if run_brute_force:
         metrics.update({
@@ -403,7 +445,7 @@ def run_analysis(raw_documents: dict, threshold: float = 0.8, bands: int = 20,
     return {"documents": documents, "warnings": warnings,
             "pairs": [r for r in rows_out if r["is_match"]],
             "rejected_pairs": [r for r in rows_out if not r["is_match"]],
-            "candidate_pairs": rows_out, "tools": brute, "metrics": metrics}
+            "candidate_pairs": rows_out, "brute_force": brute, "metrics": metrics}
 
 
 # ============================================================================
@@ -447,13 +489,15 @@ def main(argv=None):
     for r in res["pairs"]:
         print(f"  {r['doc_a']:<16} {r['doc_b']:<16} {r['similarity']:6.2f}%  bands={r['shared_buckets']}")
     print("\nBrute-force pairs missed by LSH:",
-          [(p["doc_a"], p["doc_b"]) for p in res["tools"]["pairs"] if not p["found_by_lsh"]] or "none")
+          [(p["doc_a"], p["doc_b"]) for p in res["brute_force"]["pairs"] if not p["found_by_lsh"]] or "none")
     print(f"\n{'':<26}{'LSH':>12}{'Brute force':>14}")
     print(f"{'exact comparisons':<26}{m['lsh_comparisons']:>12}{m['brute_comparisons']:>14}")
     print(f"{'time (ms)':<26}{m['lsh_ms']:>12.3f}{m['brute_ms']:>14.3f}")
-    print(f"  MinHash {m['minhash_ms']} ms, banding {m['banding_ms']} ms, verify {m['verify_ms']} ms; "
-          f"shared preprocessing {m['preprocessing_ms']} ms")
-    print(f"recall {m['recall']}  precision {m['precision']}  F1 {m['f1']}  "
+    print(f"  hashing {m['hashing_ms']} ms, MinHash {m['minhash_ms']} ms, banding {m['banding_ms']} ms, "
+          f"verify {m['verify_ms']} ms; shared cleaning + shingling {m['preprocessing_ms']} ms")
+    na = lambda v: "n/a" if v is None else v
+    print(f"recall {na(m['recall'])}  precision {na(m['precision'])}  F1 {na(m['f1'])}  "
+          f"candidate precision {na(m['candidate_precision'])}  "
           f"speedup {m['speedup']}x  candidate reduction {m['candidate_reduction']}%")
 
 
