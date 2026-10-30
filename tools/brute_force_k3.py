@@ -263,7 +263,7 @@ def save_files(res: dict, out: Path) -> None:
 
 def main():
     ap = argparse.ArgumentParser(description="Brute-force similarity, k=3, no hashing.")
-    ap.add_argument("folder", nargs="?", default="Document",
+    ap.add_argument("folder", nargs="?", default="synthetic_datasets",
                     help="folder with .pdf / .docx / .txt files (default: Document)")
     ap.add_argument("--out", default=f"results_k{K}")
     args = ap.parse_args()

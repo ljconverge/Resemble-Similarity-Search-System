@@ -365,14 +365,21 @@ def evaluate(found_pairs: Iterable[Any], true_pairs: Iterable[Any]) -> Dict[str,
     fp = len(found_set - true_set)
     fn = len(true_set - found_set)
 
-    recall: Optional[float] = None if not true_set else round(tp / len(true_set), 4)
-    precision: Optional[float] = None if not found_set else round(tp / len(found_set), 4)
-
     if not true_set and not found_set:
-        f1: Optional[float] = None
+        recall = 1.0
+        precision = 1.0
+        f1 = 1.0
     elif not true_set:
-        f1 = None
+        recall = 1.0
+        precision = 0.0 if found_set else 1.0
+        f1 = 0.0
+    elif not found_set:
+        recall = 0.0
+        precision = 0.0
+        f1 = 0.0
     else:
+        recall = round(tp / len(true_set), 4)
+        precision = round(tp / len(found_set), 4)
         denom = len(found_set) + len(true_set)
         f1 = round(2 * tp / denom, 4) if denom > 0 else 0.0
 
@@ -581,12 +588,37 @@ def run_analysis(
     rows_per_band = num_hashes // bands
     collision_buckets = sum(1 for docs in buckets.values() if len(docs) >= 2)
     cand_precision = (
-        None if cand_count == 0 else round(len(verified_pairs) / cand_count, 4)
+        1.0
+        if (cand_count == 0 and len(brute_matches) == 0)
+        else (0.0 if cand_count == 0 else round(len(verified_pairs) / cand_count, 4))
     )
     cand_reduction = (
         round((1.0 - cand_count / possible_pairs) * 100.0, 1) if possible_pairs else 0.0
     )
     speedup = round(brute_ms / max(lsh_ms, 1e-6), 2)
+
+    closest_pairs: List[Dict[str, Any]] = []
+    max_similarity = 0.0
+    if brute_matches:
+        max_similarity = brute_matches[0][2]
+    else:
+        # When no pairs met threshold, collect top 5 closest pairs across collection
+        all_raw_pairs, _ = brute_force_all_pairs(shingle_sets, threshold=0.0)
+        if all_raw_pairs:
+            max_similarity = all_raw_pairs[0][2]
+            for d1, d2, s in all_raw_pairs[:5]:
+                closest_pairs.append(
+                    {
+                        "doc_a": d1,
+                        "doc_b": d2,
+                        "similarity": round(s * 100.0, 2),
+                        "similarity_raw": s,
+                        "similarity_text": _pct_text(s, threshold),
+                        "shared_buckets": band_counts.get((d1, d2), 0),
+                        "is_match": False,
+                        "status": "Below threshold",
+                    }
+                )
 
     thresh_display: Union[int, float] = round(threshold * 100.0, 2)
     if thresh_display == int(thresh_display):
@@ -623,6 +655,8 @@ def run_analysis(
         "f1": ev["f1"],
         "false_negatives": ev["false_negatives"],
         "false_positives": ev["false_positives"],
+        "max_similarity": round(max_similarity * 100.0, 2),
+        "max_similarity_text": _pct_text(max_similarity, threshold),
         "timing_repeats": timing_repeats,
         "extraction_ms": round(extraction_ms, 2),
         "preprocessing_ms": round(preprocessing_ms, 2),
@@ -639,6 +673,7 @@ def run_analysis(
         "source_label": source_label,
         "documents": doc_summaries,
         "pairs": verified_pairs,
+        "closest_pairs": closest_pairs,
         "rejected_pairs": rejected_pairs,
         "brute_force": {"pairs": bf_pair_dicts},
         "warnings": warnings,

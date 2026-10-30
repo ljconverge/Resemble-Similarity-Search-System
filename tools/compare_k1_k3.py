@@ -78,7 +78,7 @@ def biggest_gap(values):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("folder", nargs="?", default="Document")
+    ap.add_argument("folder", nargs="?", default="synthetic_datasets")
     ap.add_argument("--threshold", type=float, default=0.2,
                     help="score above which a pair is called 'similar' in section 5 (default 0.2)")
     ap.add_argument("--out", default="comparison_output")

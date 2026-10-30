@@ -4,7 +4,7 @@ document_loader.py
 Reads every .pdf / .docx / .txt file in a folder into memory, for the
 LSH engine, brute_force_k*.py, and compare_k1_k3.py scripts.
 
-    corpus, info = load_documents(Path("Document"), preserve_extension=True)
+    corpus, info = load_documents(Path("synthetic_datasets"), preserve_extension=True)
     corpus -> {doc_id: text}          doc_id = "Doc1.pdf" (or "Doc1" if preserve_extension=False)
     info   -> [(doc_id, word_count, method), ...]
 
@@ -159,6 +159,6 @@ def _natural_key(name: str) -> List[Union[int, str]]:
 
 
 if __name__ == "__main__":
-    c, inf = load_documents(sys.argv[1] if len(sys.argv) > 1 else "Document")
+    c, inf = load_documents(sys.argv[1] if len(sys.argv) > 1 else "synthetic_datasets")
     for d, w, m in inf:
         print(f"{d:<25}{w:>8} words   via {m}")

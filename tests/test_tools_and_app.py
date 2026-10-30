@@ -15,8 +15,18 @@ def test_spa_index_loads(client):
     assert res.status_code == 200
     html = res.get_data(as_text=True)
     assert "Resemble Similarity Search" in html
-    assert "id=\"search-form\"" in html
-    assert "id=\"performance-section\"" in html
+    assert 'id="search-form"' in html
+    assert 'id="performance-section"' in html
+
+
+def test_detailed_analysis_page_loads(client):
+    res = client.get("/detailed-analysis")
+    assert res.status_code == 200
+    html = res.get_data(as_text=True)
+    assert "Detailed Analysis" in html
+    assert 'id="performance-section"' in html
+    assert 'id="search-form"' in html
+    assert 'id="buckets-section"' in html
 
 
 def test_api_search_json(client):

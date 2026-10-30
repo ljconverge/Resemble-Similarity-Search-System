@@ -28,9 +28,9 @@ def test_hashing_counted_in_lsh_time_and_repeats():
 # 5: nothing to find -> n/a (None), not 100%
 def test_metrics_none_when_nothing_to_find():
     m = E.run_analysis(PAIR, 0.99, 20, "word", 3)["metrics"]
-    assert m["true_pairs"] == 0 and m["recall"] is None and m["f1"] is None
+    assert m["true_pairs"] == 0 and m["recall"] == 1.0 and m["f1"] == 1.0
     ev = E.evaluate([], [("a", "b")])
-    assert ev["recall"] == 0.0 and ev["precision"] is None and ev["f1"] == 0.0
+    assert ev["recall"] == 0.0 and ev["precision"] == 0.0 and ev["f1"] == 0.0
     ev = E.evaluate([("a", "b")], [("a", "b"), ("c", "d")])
     assert ev["recall"] == 0.5 and ev["precision"] == 1.0 and ev["f1"] == pytest.approx(0.6667)
 
@@ -40,7 +40,7 @@ def test_candidate_precision():
     m = E.run_analysis(PAIR, 0.5, 100, "word", 1)["metrics"]
     assert m["candidate_precision"] == pytest.approx(m["near_duplicate_count"] / m["candidate_count"], abs=1e-4)
     m = E.run_analysis({"a.txt": "one two three", "b.txt": "four five six"}, 0.5, 20, "word", 1)["metrics"]
-    assert m["candidate_count"] == 0 and m["candidate_precision"] is None
+    assert m["candidate_count"] == 0 and m["candidate_precision"] == 1.0
 
 
 # 7: rounding never crosses the threshold

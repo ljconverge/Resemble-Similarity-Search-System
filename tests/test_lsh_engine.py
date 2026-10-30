@@ -236,7 +236,7 @@ def test_run_analysis_validation():
 
 
 def test_sample_documents_folder():
-    folder = E.Path(__file__).resolve().parent.parent / "Document"
+    folder = E.Path(__file__).resolve().parent.parent / "synthetic_datasets"
     res = E.run_analysis(E.load_folder(folder), 0.8, 20, "word", 3)
     found = {(p["doc_a"], p["doc_b"]) for p in res["pairs"]}
     assert found == {

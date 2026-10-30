@@ -7,31 +7,36 @@
     <title>Resemble Similarity Search</title>
     <style>
         :root {
-            --bg: #f8fafc;
+            --bg: #f9fafb;
             --surface: #ffffff;
-            --surface-subtle: #f1f5f9;
-            --border: #e2e8f0;
-            --border-hover: #cbd5e1;
-            --text-main: #0f172a;
-            --text-secondary: #334155;
-            --text-muted: #64748b;
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --primary-light: #eff6ff;
-            --primary-border: #bfdbfe;
-            --success: #16a34a;
-            --success-bg: #f0fdf4;
-            --success-border: #bbf7d0;
-            --warning: #d97706;
+            --surface-subtle: #f3f4f6;
+            --border: #e5e7eb;
+            --border-hover: #d1d5db;
+            --text-main: #111827;
+            --text-secondary: #374151;
+            --text-muted: #6b7280;
+
+            /* Green Emerald Accent */
+            --primary: #059669;
+            --primary-hover: #047857;
+            --primary-light: #ecfdf5;
+            --primary-border: #a7f3d0;
+            --primary-focus: rgba(5, 150, 105, 0.2);
+
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+            --warning: #f59e0b;
             --warning-bg: #fffbeb;
-            --warning-border: #fef3c7;
-            --danger: #dc2626;
+            --danger: #ef4444;
             --danger-bg: #fef2f2;
             --danger-border: #fecaca;
-            --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
-            --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
-            --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, -apple-system, sans-serif;
+
+            --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
         }
 
         * {
@@ -44,13 +49,13 @@
             font-family: var(--font-sans);
             background-color: var(--bg);
             color: var(--text-main);
-            line-height: 1.5;
-            padding: 1.75rem 2rem 3.5rem;
+            line-height: 1.6;
+            padding: 2.25rem 2.5rem 4.5rem;
             -webkit-font-smoothing: antialiased;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1140px;
             margin: 0 auto;
         }
 
@@ -60,27 +65,27 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 1rem;
-            padding-bottom: 1.25rem;
-            margin-bottom: 1.25rem;
+            gap: 1.25rem;
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.75rem;
             border-bottom: 1px solid var(--border);
         }
 
         .brand-block h1 {
-            font-size: 1.5rem;
+            font-size: 1.55rem;
             font-weight: 700;
             letter-spacing: -0.025em;
             color: var(--text-main);
             display: flex;
             align-items: center;
-            gap: 0.6rem;
+            gap: 0.65rem;
         }
 
         .brand-badge {
             font-size: 0.72rem;
             font-weight: 600;
             letter-spacing: 0.03em;
-            padding: 0.2rem 0.55rem;
+            padding: 0.2rem 0.6rem;
             border-radius: 6px;
             background: var(--primary-light);
             color: var(--primary);
@@ -88,103 +93,49 @@
         }
 
         .brand-block p {
-            margin-top: 0.2rem;
-            font-size: 0.85rem;
+            margin-top: 0.25rem;
+            font-size: 0.88rem;
             color: var(--text-muted);
         }
 
-        nav.tabs {
+        nav.nav-links {
             display: flex;
-            gap: 0.25rem;
-            background: #e2e8f0;
-            padding: 0.25rem;
-            border-radius: 8px;
+            gap: 0.5rem;
+            align-items: center;
         }
 
-        .tab-btn {
+        .nav-btn {
             background: transparent;
             color: var(--text-secondary);
-            border: none;
-            padding: 0.4rem 0.9rem;
-            border-radius: 6px;
-            font-size: 0.82rem;
+            border: 1px solid transparent;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
             font-weight: 600;
+            text-decoration: none;
             cursor: pointer;
             transition: all 0.15s ease;
         }
 
-        .tab-btn:hover {
+        .nav-btn:hover {
+            background: var(--surface-subtle);
             color: var(--text-main);
         }
 
-        .tab-btn.active {
-            background: var(--surface);
+        .nav-btn.active {
+            background: var(--primary-light);
             color: var(--primary);
-            box-shadow: var(--shadow-xs);
+            border-color: var(--primary-border);
         }
 
-        /* ------------------------------------------------ Pipeline Flow Visual */
-        .pipeline-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 0.85rem 1.25rem;
-            margin-bottom: 1.25rem;
-            box-shadow: var(--shadow-xs);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 0.75rem;
+        .nav-btn.cta-outline {
+            background: #ffffff;
+            color: var(--primary);
+            border: 1px solid var(--primary-border);
         }
 
-        .pipeline-header {
-            display: flex;
-            align-items: center;
-            gap: 0.45rem;
-            font-size: 0.78rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
-        }
-
-        .pipeline-steps {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .pipe-step {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            background: var(--surface-subtle);
-            padding: 0.25rem 0.65rem;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-        }
-
-        .pipe-step span.num {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 17px;
-            height: 17px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: #fff;
-            font-size: 0.68rem;
-            font-weight: 700;
-        }
-
-        .pipe-arrow {
-            color: #94a3b8;
-            font-size: 0.8rem;
+        .nav-btn.cta-outline:hover {
+            background: var(--primary-light);
         }
 
         /* ---------------------------------------------------- Banners & Alerts */
@@ -192,116 +143,176 @@
             background: var(--danger-bg);
             border: 1px solid var(--danger-border);
             color: #991b1b;
-            padding: 0.75rem 1rem;
+            padding: 0.85rem 1.15rem;
             border-radius: 8px;
-            margin-bottom: 1.25rem;
-            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.88rem;
             font-weight: 500;
         }
 
-        .alert-warning {
-            background: var(--warning-bg);
-            border: 1px solid var(--warning-border);
-            color: #92400e;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.25rem;
-            font-size: 0.85rem;
-        }
-
-        /* ------------------------------------------------- Card Layouts */
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 1.25rem;
-            margin-bottom: 1.25rem;
-            box-shadow: var(--shadow-xs);
-        }
-
-        .section-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            padding-bottom: 0.65rem;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .section-head h2 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--text-main);
-            letter-spacing: -0.01em;
-        }
-
-        .section-head p {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 0.15rem;
-        }
-
-        .pill {
-            display: inline-block;
-            padding: 0.2rem 0.6rem;
-            border-radius: 999px;
-            font-size: 0.72rem;
-            font-weight: 600;
-            letter-spacing: 0.03em;
+        .alert-success {
             background: var(--primary-light);
-            color: var(--primary);
             border: 1px solid var(--primary-border);
+            color: #065f46;
+            padding: 0.95rem 1.25rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
         }
 
-        .badge {
-            display: inline-block;
-            background: #f1f5f9;
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-            padding: 0.15rem 0.5rem;
-            border-radius: 5px;
-            font-size: 0.75rem;
-            font-family: var(--mono);
-            font-weight: 600;
-        }
-
-        /* ------------------------------------------------ Form & Controls */
-        .workspace-grid {
+        /* --------------------------------------------- Top-Level Aggregate KPIs */
+        .kpi-grid {
             display: grid;
-            grid-template-columns: 1.25fr 1fr;
+            grid-template-columns: repeat(4, 1fr);
             gap: 1.25rem;
-            margin-bottom: 1.25rem;
+            margin-bottom: 1.75rem;
         }
 
-        @media (max-width: 1024px) {
-            .workspace-grid {
+        @media (max-width: 900px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 550px) {
+            .kpi-grid {
                 grid-template-columns: 1fr;
             }
         }
 
+        .kpi-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem 1.4rem;
+            box-shadow: var(--shadow-xs);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .kpi-label {
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.35rem;
+        }
+
+        .kpi-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            color: var(--text-main);
+            line-height: 1.2;
+        }
+
+        .kpi-desc {
+            margin-top: 0.35rem;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        /* ------------------------------------------------ Main Form Card */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.75rem 2rem;
+            margin-bottom: 1.75rem;
+            box-shadow: var(--shadow-xs);
+        }
+
+        .section-head {
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.85rem;
+            border-bottom: 1px solid var(--surface-subtle);
+        }
+
+        .section-head h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.015em;
+        }
+
+        .section-head p {
+            font-size: 0.86rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        /* Upload Dropzone */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            background: var(--surface-subtle);
+            margin-bottom: 1.35rem;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background: #f0fdf4;
+        }
+
+        .upload-zone label {
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .upload-icon {
+            color: var(--primary);
+            margin-bottom: 0.2rem;
+        }
+
+        .upload-title {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .upload-subtitle {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        /* Form Controls */
         .controls-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-            gap: 0.85rem;
-            margin-bottom: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.15rem;
+            margin-bottom: 1.5rem;
         }
 
         .field {
             display: flex;
             flex-direction: column;
-            gap: 0.3rem;
+            gap: 0.35rem;
         }
 
         .field label {
-            font-size: 0.75rem;
+            font-size: 0.78rem;
             font-weight: 700;
             color: var(--text-secondary);
         }
 
         .field small.hint {
-            font-size: 0.7rem;
+            font-size: 0.72rem;
             color: var(--text-muted);
         }
 
@@ -312,9 +323,9 @@
             background: var(--surface);
             color: var(--text-main);
             border: 1px solid var(--border);
-            padding: 0.5rem 0.7rem;
-            border-radius: 6px;
-            font-size: 0.84rem;
+            padding: 0.6rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.88rem;
             width: 100%;
             transition: all 0.15s ease;
         }
@@ -324,363 +335,127 @@
         select:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+            box-shadow: 0 0 0 3px var(--primary-focus);
         }
 
+        /* Button & Action Row */
         .btn-row {
             display: flex;
-            gap: 0.65rem;
-            flex-wrap: wrap;
+            gap: 1rem;
             align-items: center;
             justify-content: space-between;
-            padding-top: 0.85rem;
+            flex-wrap: wrap;
+            padding-top: 1.25rem;
             border-top: 1px solid var(--border);
         }
 
-        button.primary {
+        button.btn-primary,
+        a.btn-primary {
             background: var(--primary);
             color: #ffffff;
             border: none;
-            padding: 0.55rem 1.1rem;
-            border-radius: 6px;
+            padding: 0.75rem 1.85rem;
+            border-radius: 8px;
             font-weight: 600;
-            font-size: 0.82rem;
+            font-size: 0.9rem;
             cursor: pointer;
-            box-shadow: var(--shadow-xs);
+            box-shadow: var(--shadow-sm);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
             transition: all 0.15s ease;
         }
 
-        button.primary:hover {
+        button.btn-primary:hover,
+        a.btn-primary:hover {
             background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
         }
 
-        button.primary:disabled,
-        button.secondary:disabled {
+        button.btn-primary:disabled {
             opacity: 0.55;
             cursor: not-allowed;
+            transform: none;
         }
 
-        button.secondary {
+        /* --------------------------------------------- Summary Card */
+        .summary-box {
             background: var(--surface);
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-            padding: 0.55rem 1rem;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.82rem;
-            cursor: pointer;
-            transition: all 0.15s ease;
+            border: 1px solid var(--primary-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.75rem;
+            box-shadow: var(--shadow-xs);
         }
 
-        button.secondary:hover {
-            background: var(--surface-subtle);
-            border-color: var(--border-hover);
-            color: var(--text-main);
-        }
-
-        /* --------------------------------------------- Query Search Card */
-        .search-row {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-            margin-bottom: 0.65rem;
-        }
-
-        .quick-queries {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            flex-wrap: wrap;
-            margin-bottom: 0.75rem;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .quick-chip {
-            background: var(--surface-subtle);
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 0.15rem 0.5rem;
-            cursor: pointer;
-            font-size: 0.73rem;
-        }
-
-        .quick-chip:hover {
-            background: var(--primary-light);
-            color: var(--primary);
-            border-color: var(--primary-border);
-        }
-
-        .result-item {
-            background: #fafafa;
-            border: 1px solid var(--border);
-            border-radius: 7px;
-            padding: 0.75rem 0.9rem;
-            margin-bottom: 0.6rem;
-        }
-
-        .result-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.3rem;
-        }
-
-        .result-top strong {
-            font-size: 0.85rem;
-            color: var(--text-main);
-        }
-
-        .result-scores {
-            display: flex;
-            gap: 0.35rem;
-        }
-
-        .result-snippet {
-            font-size: 0.78rem;
-            color: var(--text-muted);
-            line-height: 1.45;
-        }
-
-        /* --------------------------------------------- 4-Bucket Section */
-        .filter-toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-            align-items: center;
-            justify-content: space-between;
-            background: var(--surface-subtle);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 0.6rem 0.85rem;
-            margin-bottom: 1rem;
-        }
-
-        .filter-controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.4rem;
-            align-items: center;
-        }
-
-        .role-chip {
-            background: var(--surface);
-            color: var(--text-muted);
-            border: 1px solid var(--border);
-            padding: 0.25rem 0.65rem;
-            border-radius: 999px;
-            font-size: 0.74rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-
-        .role-chip:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        .role-chip.active {
-            background: var(--primary);
-            color: #ffffff;
-            border-color: var(--primary);
-        }
-
-        .buckets-grid {
+        .summary-stats {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 1rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--surface-subtle);
         }
 
-        @media (max-width: 1180px) {
-            .buckets-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 640px) {
-            .buckets-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .bucket-column {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+        .stat-item {
             display: flex;
             flex-direction: column;
-            min-height: 250px;
-            box-shadow: var(--shadow-xs);
+            gap: 0.2rem;
         }
 
-        .bucket-header {
-            padding: 0.65rem 0.85rem;
-            border-bottom: 1px solid var(--border);
-            background: var(--surface-subtle);
-            border-radius: 7px 7px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .bucket-header h3 {
-            font-size: 0.88rem;
+        .stat-item span.lbl {
+            font-size: 0.74rem;
             font-weight: 700;
-            color: var(--text-main);
-        }
-
-        .bucket-records {
-            padding: 0.7rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            flex: 1;
-        }
-
-        .record-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 0.55rem 0.75rem;
-            transition: all 0.15s ease;
-        }
-
-        .record-card:hover {
-            border-color: var(--primary);
-            box-shadow: var(--shadow-xs);
-        }
-
-        .record-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 0.4rem;
-            margin-bottom: 0.2rem;
-        }
-
-        .record-name {
-            font-weight: 600;
-            font-size: 0.82rem;
-            color: var(--text-main);
-            word-break: break-word;
-        }
-
-        .record-details {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            margin-top: 0.25rem;
-        }
-
-        .role-tag {
-            background: var(--surface-subtle);
-            color: var(--text-secondary);
-            padding: 0.1rem 0.4rem;
-            border-radius: 4px;
-            font-size: 0.68rem;
-            font-weight: 600;
-            border: 1px solid var(--border);
-        }
-
-        /* --------------------------------------------- Tables & Results */
-        .table-wrap {
-            overflow-x: auto;
-            border-radius: 7px;
-            border: 1px solid var(--border);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.82rem;
-        }
-
-        th,
-        td {
-            text-align: left;
-            padding: 0.6rem 0.75rem;
-            border-bottom: 1px solid var(--border);
-            vertical-align: middle;
-        }
-
-        th {
-            color: var(--text-muted);
-            font-size: 0.7rem;
             text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            background: var(--surface-subtle);
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        .score-track {
-            width: 100%;
-            height: 5px;
-            background: var(--surface-subtle);
-            border-radius: 999px;
-            overflow: hidden;
-            margin-top: 0.25rem;
-            border: 1px solid var(--border);
-        }
-
-        .score-track i {
-            display: block;
-            height: 100%;
-            background: var(--primary);
-            border-radius: 999px;
-        }
-
-        .status {
-            display: inline-block;
-            padding: 0.15rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.72rem;
-            font-weight: 600;
-        }
-
-        .status.good {
-            background: var(--success-bg);
-            color: #15803d;
-            border: 1px solid var(--success-border);
-        }
-
-        .status.neutral {
-            background: var(--surface-subtle);
-            color: var(--text-muted);
-            border: 1px solid var(--border);
-        }
-
-        .muted {
             color: var(--text-muted);
         }
 
-        .hidden {
-            display: none !important;
+        .stat-item span.val {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        /* --------------------------------------------- Compact Query Search Bar */
+        .search-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            box-shadow: var(--shadow-xs);
+        }
+
+        .search-inline-row {
+            display: flex;
+            gap: 0.65rem;
+            align-items: center;
         }
 
         .spinner {
             display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid var(--border);
+            width: 15px;
+            height: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
             border-radius: 50%;
-            border-top-color: var(--primary);
+            border-top-color: #ffffff;
             animation: spin 0.8s linear infinite;
-            margin-right: 6px;
-            vertical-align: middle;
         }
 
         @keyframes spin {
             to {
                 transform: rotate(360deg);
             }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .muted {
+            color: var(--text-muted);
         }
     </style>
 </head>
@@ -690,22 +465,12 @@
         <!-- Header -->
         <header class="navbar">
             <div class="brand-block">
-                <h1>Resemble Similarity Search <span class="brand-badge">Carter-Wegman M61</span></h1>
-                <p>Deterministic SHA-256 Modulo Partitioning &amp; MinHash Locality-Sensitive Hashing</p>
+                <h1>Resemble Similarity Search <span class="brand-badge">Mersenne M61</span></h1>
+                <p>Deterministic SHA-256 Partitioning &amp; MinHash Locality-Sensitive Hashing</p>
             </div>
-            <nav class="tabs" aria-label="View Modes">
-                <button type="button" class="tab-btn active" id="tab-all-btn" onclick="switchTab('all')">
-                    Unified Dashboard
-                </button>
-                <button type="button" class="tab-btn" id="tab-search-btn" onclick="switchTab('search')">
-                    Analysis &amp; Search
-                </button>
-                <button type="button" class="tab-btn" id="tab-buckets-btn" onclick="switchTab('buckets')">
-                    SHA-256 Buckets
-                </button>
-                <button type="button" class="tab-btn" id="tab-perf-btn" onclick="switchTab('performance')">
-                    Performance Metrics
-                </button>
+            <nav class="nav-links" aria-label="Main Navigation">
+                <a href="/" class="nav-btn active">Dashboard</a>
+                <a href="/detailed-analysis" class="nav-btn cta-outline">Detailed Analysis →</a>
             </nav>
         </header>
 
@@ -713,486 +478,234 @@
         <div class="alert-error" id="global-error" role="alert">{{ error }}</div>
         {% endif %}
 
-        <!-- Section C: LSH Processing Visual Flow -->
-        <div class="pipeline-card" aria-label="Algorithm Pipeline Overview">
-            <div class="pipeline-header">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-                LSH Processing Pipeline
+        <!-- Top-Level Aggregate KPIs -->
+        <section id="performance-section" class="kpi-grid" aria-label="System Overview">
+            <div class="kpi-card">
+                <div class="kpi-label">Total Documents</div>
+                <div class="kpi-value" id="kpi-num-docs">
+                    {% if analysis and analysis.documents %}
+                        {{ analysis.documents | length }}
+                    {% elif metrics and metrics.num_documents %}
+                        {{ metrics.num_documents }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </div>
+                <div class="kpi-desc">Indexed &amp; verified in corpus</div>
             </div>
-            <div class="pipeline-steps">
-                <div class="pipe-step"><span class="num">1</span> Text Preprocessing</div>
-                <span class="pipe-arrow">→</span>
-                <div class="pipe-step"><span class="num">2</span> Shingling</div>
-                <span class="pipe-arrow">→</span>
-                <div class="pipe-step"><span class="num">3</span> MinHash Generation</div>
-                <span class="pipe-arrow">→</span>
-                <div class="pipe-step"><span class="num">4</span> LSH Banding</div>
-                <span class="pipe-arrow">→</span>
-                <div class="pipe-step"><span class="num">5</span> Candidate Retrieval</div>
-                <span class="pipe-arrow">→</span>
-                <div class="pipe-step"><span class="num">6</span> Exact Jaccard Verification</div>
-            </div>
-        </div>
 
-        <!-- Section A & B: Core Analysis & Search Workspace -->
-        <div class="workspace-grid" id="forms-wrapper">
-            <!-- Section A: Similarity Analysis Form -->
-            <section class="card" style="margin-bottom: 0;">
-                <div class="section-head">
+            <div class="kpi-card">
+                <div class="kpi-label">Execution Time</div>
+                <div class="kpi-value">
+                    <span id="kpi-lsh-time">
+                        {% if analysis and analysis.metrics %}
+                            {{ analysis.metrics.lsh_ms }}
+                        {% elif metrics and metrics.last_query_lsh_time_ms %}
+                            {{ metrics.last_query_lsh_time_ms }}
+                        {% else %}
+                            0.0
+                        {% endif %}
+                    </span>
+                    <small style="font-size: 0.95rem; font-weight: 600; color: var(--text-muted);">ms</small>
+                </div>
+                <div class="kpi-desc">LSH candidate &amp; verification</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Verified Matches</div>
+                <div class="kpi-value" id="kpi-verified-matches">
+                    {{ analysis.pairs | length if analysis and analysis.pairs else 0 }}
+                </div>
+                <div class="kpi-desc">Document pairs meeting threshold</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Comparisons Pruned</div>
+                <div class="kpi-value" id="kpi-pruned">
+                    {% if analysis and analysis.metrics %}
+                        {{ analysis.metrics.candidate_reduction }}%
+                    {% else %}
+                        0.0%
+                    {% endif %}
+                </div>
+                <div class="kpi-desc">Sub-quadratic checks saved</div>
+            </div>
+        </section>
+
+        <!-- Post-Analysis Summary Box (Shown when analysis completes) -->
+        <div id="analysis-summary-wrapper" class="{% if not analysis %}hidden{% endif %}">
+            {% if analysis %}
+            <div class="summary-box">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
                     <div>
-                        <h2>Similarity Analysis</h2>
-                        <p>Configure shingling, Carter-Wegman universal MinHash, and banding parameters</p>
+                        <h3 style="font-size: 1.1rem; color: #065f46; font-weight: 700;">
+                            ✓ Analysis Completed: {{ analysis.documents | length }} Documents Processed
+                        </h3>
+                        <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 0.15rem;">
+                            {{ analysis.source_label }} · Cutoff threshold: {{ analysis.metrics.threshold }}%
+                        </p>
                     </div>
-                    <span class="pill">LSH VERIFIER</span>
+                    <a href="/detailed-analysis" class="btn-primary">
+                        View Detailed Analysis &amp; Visualizations →
+                    </a>
                 </div>
 
-                <div id="analyze-error-banner" class="alert-error hidden" role="alert"></div>
-
-                <form id="analyze-form" action="/api/analyze" method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="source" id="source-hidden" value="sample" />
-                    <div class="controls-grid">
-                        <div class="field">
-                            <label for="threshold-input">Similarity Threshold (0–100%)</label>
-                            <input type="number" id="threshold-input" name="threshold" min="0" max="100" step="any"
-                                value="{{ analysis.metrics.threshold if analysis else 80 }}" required />
-                            <small class="hint">Exact Jaccard cutoff</small>
-                        </div>
-
-                        <div class="field">
-                            <label for="shingle-mode">Shingle Granularity</label>
-                            {% set cur_mode = analysis.metrics.shingle_mode if analysis else 'word' %}
-                            <select id="shingle-mode" name="shingle_mode">
-                                <option value="word" {% if cur_mode=='word' %}selected{% endif %}>Word Shingles (1–20)</option>
-                                <option value="char" {% if cur_mode=='char' %}selected{% endif %}>Character Shingles (1–30)</option>
-                            </select>
-                            <small class="hint">Token representation</small>
-                        </div>
-
-                        <div class="field">
-                            <label for="shingle-size" id="k-label">Shingle size k (1–20)</label>
-                            <input type="number" id="shingle-size" name="shingle_size" min="1" max="20"
-                                value="{{ analysis.metrics.shingle_size if analysis else 3 }}" required />
-                            <small class="hint">Consecutive phrase size</small>
-                        </div>
-
-                        <div class="field">
-                            <label for="num-permutations">MinHash Permutations</label>
-                            <input type="text" id="num-permutations" value="100 Permutations" readonly
-                                style="background: var(--surface-subtle); color: var(--text-secondary); cursor: default;" />
-                            <small class="hint">Total hashes n = b × r</small>
-                        </div>
-
-                        <div class="field">
-                            <label for="bands-select">Bands &amp; Rows (b × r)</label>
-                            {% set cur_bands = analysis.metrics.bands if analysis else 20 %}
-                            <select id="bands-select" name="bands">
-                                <option value="20" {% if cur_bands==20 %}selected{% endif %}>20 bands × 5 rows (Inflection ~55%)</option>
-                                <option value="10" {% if cur_bands==10 %}selected{% endif %}>10 bands × 10 rows (Inflection ~79%)</option>
-                                <option value="25" {% if cur_bands==25 %}selected{% endif %}>25 bands × 4 rows (Inflection ~45%)</option>
-                                <option value="50" {% if cur_bands==50 %}selected{% endif %}>50 bands × 2 rows (Inflection ~14%)</option>
-                                <option value="100" {% if cur_bands==100 %}selected{% endif %}>100 bands × 1 row (Inflection ~1%)</option>
-                            </select>
-                            <small class="hint">Banding matrix partitioning</small>
-                        </div>
-
-                        <div class="field">
-                            <label for="minhash-method">Hashing Algorithm</label>
-                            {% set cur_mh = analysis.metrics.minhash_method if analysis else 'fast' %}
-                            <select id="minhash-method" name="minhash_method">
-                                <option value="fast" {% if cur_mh=='fast' %}selected{% endif %}>Carter-Wegman (Fast p=2⁶¹-1)</option>
-                                <option value="notebook" {% if cur_mh=='notebook' %}selected{% endif %}>Seeded mmh3 (Classic)</option>
-                            </select>
-                            <small class="hint">MinHash generator</small>
-                        </div>
-
-                        <div class="field">
-                            <label for="file-input">Optional Custom Files (.pdf, .txt)</label>
-                            <input type="file" id="file-input" name="documents" multiple accept=".pdf,.txt" />
-                            <small class="hint">Upload custom documents</small>
-                        </div>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <span class="lbl">Near-Duplicate Pairs</span>
+                        <span class="val" style="color: var(--primary);">{{ analysis.pairs | length }}</span>
                     </div>
-
-                    <div class="btn-row">
-                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-                            <button type="submit" class="primary" id="analyze-submit-btn"
-                                onclick="document.getElementById('source-hidden').value='sample';">
-                                Analyze Sample Documents (10)
-                            </button>
-                            <button type="submit" class="secondary" id="analyze-upload-btn"
-                                onclick="document.getElementById('source-hidden').value='upload';">
-                                Analyze Uploaded Files
-                            </button>
-                        </div>
-                        <span id="analyze-spinner" class="muted hidden" style="font-size: 0.8rem;">
-                            <span class="spinner"></span>Evaluating LSH candidates...
+                    <div class="stat-item">
+                        <span class="lbl">Max Similarity Observed</span>
+                        <span class="val">
+                            {{ analysis.metrics.max_similarity_text | default('0.00') }}%
                         </span>
                     </div>
-                </form>
-            </section>
-
-            <!-- Section B: Document Search -->
-            <section class="card" style="margin-bottom: 0;">
-                <div class="section-head">
-                    <div>
-                        <h2>Document Search</h2>
-                        <p>Query the indexed corpus in sub-milliseconds via MinHash LSH</p>
-                    </div>
-                    <span class="pill">AJAX SEARCH</span>
-                </div>
-
-                <form id="search-form" action="/api/search" method="POST">
-                    <div class="search-row">
-                        <input type="text" id="query-input" name="query"
-                            placeholder="Enter search query (e.g. deep residual learning)..."
-                            value="{{ query or '' }}" style="flex: 1; min-width: 170px;" required />
-                        <input type="number" id="topk-input" name="top_k" value="5" min="1" max="50"
-                            style="width: 65px;" title="Top-K Results" />
-                        <button type="submit" class="primary" id="search-btn">Search</button>
-                    </div>
-                    <div class="quick-queries">
-                        <span>Quick Queries:</span>
-                        <button type="button" class="quick-chip" onclick="fillQuery('deep residual learning for image recognition')">ResNet</button>
-                        <button type="button" class="quick-chip" onclick="fillQuery('convolutional neural networks large-scale')">VGG</button>
-                        <button type="button" class="quick-chip" onclick="fillQuery('transformers self-attention image patches')">ViT</button>
-                        <button type="button" class="quick-chip" onclick="fillQuery('spectral graph convolutions linearly edges')">GCN</button>
-                    </div>
-                    <p id="search-error-banner" class="hidden" style="color: #dc2626; font-size: 0.8rem;"></p>
-                </form>
-
-                <div id="results-container" style="margin-top: 0.65rem;">
-                    <div id="results-list">
-                        {% if results %}
-                        {% for r in results %}
-                        <div class="result-item">
-                            <div class="result-top">
-                                <strong>{{ r.doc_id }}</strong>
-                                <div class="result-scores">
-                                    <span class="badge">Jaccard: {{ r.exact_jaccard }}</span>
-                                    <span class="badge">MinHash: {{ r.estimated_similarity }}</span>
-                                </div>
-                            </div>
-                            <p class="result-snippet">{{ r.snippet }}</p>
-                        </div>
-                        {% endfor %}
-                        {% else %}
-                        <p class="muted" id="empty-state" style="font-size: 0.8rem; text-align: center; padding: 1.25rem 0;">
-                            Submit a query or click a quick suggestion above to search matching documents.
-                        </p>
-                        {% endif %}
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <!-- Section D & E: Results & Performance -->
-        <div class="workspace-grid" id="results-and-perf-wrapper">
-            <!-- Section D: Pairwise Similarity Results -->
-            <section id="search-section" class="card">
-                <div class="section-head">
-                    <div>
-                        <h2>Pairwise Similarity Results</h2>
-                        <p id="analysis-subtitle">
-                            {% if analysis %}
-                            Source: {{ analysis.source_label }} · Cutoff: {{ analysis.metrics.threshold }}%
+                    <div class="stat-item">
+                        <span class="lbl">Empirical Recall</span>
+                        <span class="val">
+                            {% if analysis.metrics.recall is not none %}
+                                {{ "%.1f"|format(analysis.metrics.recall * 100) }}%
                             {% else %}
-                            Run an analysis to inspect verified near-duplicate pairs.
+                                100.0%
                             {% endif %}
-                        </p>
+                        </span>
                     </div>
-                    <span class="pill">VERIFIED DUPLICATES</span>
-                </div>
-
-                <div id="analysis-warnings-container">
-                    {% if analysis and analysis.warnings %}
-                    <div class="alert-warning">
-                        <ul style="margin: 0; padding-left: 1.2rem;">
-                            {% for w in analysis.warnings %}
-                            <li>{{ w }}</li>
-                            {% endfor %}
-                        </ul>
+                    <div class="stat-item">
+                        <span class="lbl">Empirical Precision</span>
+                        <span class="val">
+                            {% if analysis.metrics.precision is not none %}
+                                {{ "%.1f"|format(analysis.metrics.precision * 100) }}%
+                            {% else %}
+                                100.0%
+                            {% endif %}
+                        </span>
                     </div>
-                    {% endif %}
                 </div>
-
-                <div id="pairs-table-container">
-                    {% if analysis %}
-                    {% if analysis.pairs %}
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Document Pair</th>
-                                    <th>Jaccard Similarity</th>
-                                    <th>Band Collisions</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for pair in analysis.pairs %}
-                                <tr>
-                                    <td><strong>{{ pair.doc_a }}</strong> ↔ <strong>{{ pair.doc_b }}</strong></td>
-                                    <td>
-                                        <strong>{{ pair.similarity_text }}%</strong>
-                                        <div class="score-track"><i style="width: {{ pair.similarity }}%"></i></div>
-                                    </td>
-                                    <td><span class="badge">{{ pair.shared_buckets }} bands</span></td>
-                                    <td><span class="status good">{{ pair.status }}</span></td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <p class="muted" style="padding: 1rem 0;">No document pairs met the {{ analysis.metrics.threshold }}% similarity cutoff.</p>
-                    {% endif %}
-                    {% else %}
-                    <p class="muted" style="padding: 1rem 0;">Click "Analyze Sample Documents" above to begin pairwise similarity verification.</p>
-                    {% endif %}
-                </div>
-
-                <div id="missed-pairs-container">
-                    {% if analysis %}
-                    {% set missed = analysis.brute_force.pairs|rejectattr("found_by_lsh")|list if analysis.brute_force else [] %}
-                    {% if missed %}
-                    <div class="alert-warning" style="margin-top: 0.85rem;">
-                        <strong>Missed by LSH ({{ missed|length }})</strong>
-                        <ul style="margin: 0.35rem 0 0; padding-left: 1.2rem; font-size: 0.8rem;">
-                            {% for p in missed %}
-                            <li>{{ p.doc_a }} ↔ {{ p.doc_b }}: {{ p.similarity_text }}%</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-                    {% endif %}
-                </div>
-
-                <div id="rejected-pairs-container">
-                    {% if analysis and analysis.rejected_pairs %}
-                    <details style="margin-top: 0.85rem;">
-                        <summary class="muted" style="font-size: 0.8rem; cursor: pointer; font-weight: 600;">
-                            Candidate Diagnostics — Below Cutoff ({{ analysis.rejected_pairs|length }})
-                        </summary>
-                        <div class="table-wrap" style="margin-top: 0.4rem;">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Candidate Pair</th>
-                                        <th>Exact Jaccard</th>
-                                        <th>Shared Bands</th>
-                                        <th>Decision</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for pair in analysis.rejected_pairs %}
-                                    <tr>
-                                        <td>{{ pair.doc_a }} ↔ {{ pair.doc_b }}</td>
-                                        <td>{{ pair.similarity_text }}%</td>
-                                        <td>{{ pair.shared_buckets }}</td>
-                                        <td><span class="status neutral">{{ pair.status }}</span></td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </details>
-                    {% endif %}
-                </div>
-            </section>
-
-            <!-- Section E: Performance & Speedup Comparison -->
-            <section id="performance-section" class="card">
-                <div class="section-head">
-                    <div>
-                        <h2>Performance Comparison</h2>
-                        <p>LSH sub-quadratic indexing vs. brute-force pairwise baseline</p>
-                    </div>
-                    <button type="button" class="secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" onclick="refreshMetrics()">Refresh</button>
-                </div>
-
-                <div id="performance-table-container">
-                    {% if analysis %}
-                    {% set m = analysis.metrics %}
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Measure</th>
-                                    <th>LSH Sub-Quadratic</th>
-                                    <th>Brute Force (n²)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Execution Time (ms)
-                                        {% if m.timing_repeats > 1 %}
-                                        <br /><small class="muted">median of {{ m.timing_repeats }} runs</small>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <strong>{{ m.lsh_ms }} ms</strong>
-                                        <br />
-                                        <small class="muted">
-                                            shingle hashing {{ m.hashing_ms }} · MinHash {{ m.minhash_ms }} · banding {{ m.banding_ms }} · verify {{ m.verify_ms }}
-                                        </small>
-                                    </td>
-                                    <td><strong>{{ m.brute_ms }} ms</strong></td>
-                                </tr>
-                                <tr>
-                                    <td>Exact Comparisons</td>
-                                    <td><strong>{{ "{:,}".format(m.lsh_comparisons) }}</strong></td>
-                                    <td><strong>{{ "{:,}".format(m.brute_comparisons) }}</strong></td>
-                                </tr>
-                                <tr>
-                                    <td>Pairs at or above {{ m.threshold }}%</td>
-                                    <td><strong>{{ m.found_pairs }}</strong></td>
-                                    <td><strong>{{ m.true_pairs }}</strong></td>
-                                </tr>
-                                <tr>
-                                    <td>Recall / Candidate Precision</td>
-                                    <td>
-                                        <strong>{% if m.recall is none %}n/a{% else %}{{ "%.1f"|format(m.recall * 100) }}%{% endif %}</strong>
-                                        /
-                                        <strong>{% if m.candidate_precision is none %}n/a{% else %}{{ "%.1f"|format(m.candidate_precision * 100) }}%{% endif %}</strong>
-                                    </td>
-                                    <td>100% / 100%</td>
-                                </tr>
-                                <tr>
-                                    <td>Post-Verify Precision / F1</td>
-                                    <td>
-                                        <strong>{{ "n/a" if m.precision is none else m.precision }}</strong> /
-                                        <strong>{{ "n/a" if m.f1 is none else m.f1 }}</strong>
-                                    </td>
-                                    <td>1.0 / 1.0</td>
-                                </tr>
-                                <tr>
-                                    <td>Speedup / Pruned Comparisons</td>
-                                    <td><strong style="color: var(--primary);">{{ m.speedup }}×</strong></td>
-                                    <td><strong style="color: var(--success);">{{ m.candidate_reduction }}% pruned</strong></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <p class="muted" style="margin-top: 0.65rem; font-size: 0.73rem;">
-                        Shared extraction ({{ m.extraction_ms }} ms) and text cleaning ({{ m.preprocessing_ms }} ms) are measured separately.
-                    </p>
-                    {% else %}
-                    <div style="padding: 1rem 0; text-align: center;">
-                        <p class="muted" style="font-size: 0.82rem; margin-bottom: 0.75rem;">
-                            Run an analysis on the document collection to generate comparative stage timings and speedup metrics.
-                        </p>
-                        <div class="table-wrap">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Measure</th>
-                                        <th>Current Index</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Indexed Documents</td>
-                                        <td><strong>{{ metrics.num_documents if metrics else 5 }}</strong></td>
-                                    </tr>
-                                    <tr>
-                                        <td>MinHash Hashes / Bands</td>
-                                        <td><strong>{{ metrics.num_hashes if metrics else 100 }} / {{ metrics.num_bands if metrics else 20 }}</strong></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Query Precision / Recall</td>
-                                        <td><strong>{{ metrics.precision_at_k if metrics else 1.0 }} / {{ metrics.recall_at_k if metrics else 1.0 }}</strong></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-            </section>
+            </div>
+            {% endif %}
         </div>
 
-        <!-- Section 3: 4-Bucket SHA-256 Partitioning -->
-        <section class="card" id="buckets-section">
+        <!-- Main Configuration & Upload Form -->
+        <section class="card" aria-label="Upload and Analysis Form">
             <div class="section-head">
-                <div>
-                    <h2>SHA-256 Deterministic Modulo Partitioning (4 Buckets)</h2>
-                    <p>Documents assigned deterministically via <code>int(SHA-256(id:name), 16) % 4</code></p>
-                </div>
-                <span class="pill">UNIFORM DISTRIBUTION</span>
+                <h2>Upload &amp; Analyze Documents</h2>
+                <p>Upload files (.pdf, .txt) to detect near-duplicates using Carter-Wegman MinHash LSH and SHA-256 partition clustering.</p>
             </div>
 
-            <!-- Filter Toolbar -->
-            <div class="filter-toolbar">
-                <div class="filter-controls" id="role-chip-group">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">Category:</span>
-                    <button type="button" class="role-chip active" data-role-filter="ALL" onclick="applyRoleFilter('ALL')">
-                        All
-                    </button>
-                    {% set seen_roles = [] %}
-                    {% for rec in records | default([]) %}
-                    {% set r_name = rec.role if rec.role is defined else rec.category %}
-                    {% if r_name and r_name not in seen_roles %}
-                    {% set _ = seen_roles.append(r_name) %}
-                    <button type="button" class="role-chip" data-role-filter="{{ r_name }}" onclick="applyRoleFilter('{{ r_name }}')">
-                        {{ r_name }}
-                    </button>
-                    {% endif %}
-                    {% endfor %}
+            <div id="analyze-error-banner" class="alert-error hidden" role="alert"></div>
+
+            <form id="analyze-form" action="/api/analyze" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="source" id="source-hidden" value="upload" />
+
+                <!-- Upload Drag & Drop Zone -->
+                <div class="upload-zone" onclick="document.getElementById('file-input').click();">
+                    <label for="file-input" onclick="event.stopPropagation();">
+                        <div class="upload-icon">
+                            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </div>
+                        <span class="upload-title" id="file-label-text">Select PDF or TXT files to upload</span>
+                        <span class="upload-subtitle">Supports multiple research papers or synthetic documents</span>
+                    </label>
+                    <input type="file" id="file-input" name="documents" multiple accept=".pdf,.txt" style="display: none;" onchange="updateFileName(this);" />
                 </div>
 
-                <div class="filter-controls">
-                    <!-- Kept for accessibility and backward-compatible automated tests -->
-                    <select id="role-select" aria-label="Filter by Category" onchange="applyRoleFilter(this.value)" style="display: none;">
-                        <option value="ALL">All Categories</option>
-                        {% for r_name in seen_roles %}
-                        <option value="{{ r_name }}">{{ r_name }}</option>
-                        {% endfor %}
-                    </select>
-                    <input type="text" id="bucket-search-input" placeholder="Search document name or ID..."
-                        oninput="filterBucketCards()" style="width: 220px;" />
-                </div>
-            </div>
-
-            <!-- 4 Bucket Columns -->
-            <div class="buckets-grid" id="buckets-grid">
-                {% for b_idx in range(num_buckets | default(4)) %}
-                {% set b_summary = bucket_summaries[b_idx] if bucket_summaries and b_idx < (bucket_summaries | length) else None %}
-                {% set b_records = b_summary.records if b_summary else (buckets[b_idx] if buckets and b_idx in buckets else []) %}
-                <div class="bucket-column" data-bucket-col="{{ b_idx }}">
-                    <div class="bucket-header">
-                        <h3>Bucket {{ b_idx }}</h3>
-                        <span class="pill"><span class="bucket-visible-count">{{ b_records | length }}</span> items</span>
+                <div class="controls-grid">
+                    <div class="field">
+                        <label for="threshold-input">Similarity Threshold (0–100%)</label>
+                        <input type="number" id="threshold-input" name="threshold" min="0" max="100" step="any"
+                            value="{{ analysis.metrics.threshold if analysis else 80 }}" required />
+                        <small class="hint">Exact Jaccard cutoff</small>
                     </div>
-                    <div class="bucket-records">
-                        {% if b_records %}
-                        {% for rec in b_records %}
-                        {% set rec_role = rec.role if rec.role is defined else (rec.category if rec.category is defined else 'General') %}
-                        <article class="record-card" data-role="{{ rec_role }}" data-name="{{ rec.name | lower }}"
-                            data-hash="{{ rec.truncated_hash | lower }}" data-value="{{ rec.value }}">
-                            <div class="record-top">
-                                <div>
-                                    <span class="muted" style="font-size: 0.68rem; font-family: var(--mono);">{{ rec.id }}</span>
-                                    <div class="record-name">{{ rec.name }}</div>
-                                </div>
-                            </div>
-                            <div class="record-details">
-                                <span class="role-tag">{{ rec_role }}</span>
-                                <span class="badge" title="Full SHA-256: {{ rec.full_hash }}">#{{ rec.truncated_hash }}</span>
-                            </div>
-                        </article>
-                        {% endfor %}
-                        {% else %}
-                        <p class="muted" style="font-size: 0.78rem; text-align: center; margin: auto 0;">No items in Bucket {{ b_idx }}</p>
-                        {% endif %}
+
+                    <div class="field">
+                        <label for="shingle-mode">Shingle Granularity</label>
+                        {% set cur_mode = analysis.metrics.shingle_mode if analysis else 'word' %}
+                        <select id="shingle-mode" name="shingle_mode">
+                            <option value="word" {% if cur_mode=='word' %}selected{% endif %}>Word Shingles (1–20)</option>
+                            <option value="char" {% if cur_mode=='char' %}selected{% endif %}>Character Shingles (1–30)</option>
+                        </select>
+                        <small class="hint">Token representation</small>
+                    </div>
+
+                    <div class="field">
+                        <label for="shingle-size" id="k-label">Shingle size k (1–20)</label>
+                        <input type="number" id="shingle-size" name="shingle_size" min="1" max="20"
+                            value="{{ analysis.metrics.shingle_size if analysis else 3 }}" required />
+                        <small class="hint">Consecutive phrase size</small>
+                    </div>
+
+                    <div class="field">
+                        <label for="bands-select">Bands Configuration (100 Hashes)</label>
+                        {% set cur_bands = analysis.metrics.bands if analysis else 20 %}
+                        <select id="bands-select" name="bands">
+                            <option value="20" {% if cur_bands==20 %}selected{% endif %}>20 bands × 5 rows (Threshold ~55%)</option>
+                            <option value="10" {% if cur_bands==10 %}selected{% endif %}>10 bands × 10 rows (Threshold ~79%)</option>
+                            <option value="25" {% if cur_bands==25 %}selected{% endif %}>25 bands × 4 rows (Threshold ~45%)</option>
+                            <option value="50" {% if cur_bands==50 %}selected{% endif %}>50 bands × 2 rows (Threshold ~14%)</option>
+                            <option value="100" {% if cur_bands==100 %}selected{% endif %}>100 bands × 1 row (Threshold ~1%)</option>
+                        </select>
+                        <small class="hint">Banding matrix partitioning</small>
+                    </div>
+
+                    <div class="field">
+                        <label for="minhash-method">Hashing Algorithm</label>
+                        {% set cur_mh = analysis.metrics.minhash_method if analysis else 'fast' %}
+                        <select id="minhash-method" name="minhash_method">
+                            <option value="fast" {% if cur_mh=='fast' %}selected{% endif %}>Carter-Wegman (Fast p=2⁶¹-1)</option>
+                            <option value="notebook" {% if cur_mh=='notebook' %}selected{% endif %}>Seeded mmh3 (Classic)</option>
+                        </select>
+                        <small class="hint">MinHash generator</small>
                     </div>
                 </div>
-                {% endfor %}
-            </div>
+
+                <!-- ONLY ONE Primary Action Button -->
+                <div class="btn-row">
+                    <button type="submit" class="btn-primary" id="analyze-submit-btn">
+                        <span id="btn-spinner" class="spinner hidden"></span>
+                        <span id="btn-text">Analyze uploaded files</span>
+                    </button>
+                    <span id="analyze-spinner-text" class="muted hidden" style="font-size: 0.84rem;">
+                        Processing documents, generating MinHash signatures &amp; evaluating candidates...
+                    </span>
+                </div>
+            </form>
+        </section>
+
+        <!-- Compact Query Search Bar -->
+        <section class="search-card" aria-label="Query Corpus">
+            <form id="search-form" action="/api/search" method="POST">
+                <div class="search-inline-row">
+                    <input type="text" id="query-input" name="query"
+                        placeholder="Quick query search (e.g. deep residual learning for image recognition)..."
+                        value="{{ query or '' }}" style="flex: 1;" required />
+                    <input type="number" id="topk-input" name="top_k" value="5" min="1" max="50"
+                        style="width: 70px;" title="Top-K Results" />
+                    <button type="submit" class="btn-primary" id="search-btn" style="padding: 0.6rem 1.25rem;">Search</button>
+                </div>
+            </form>
+            <div id="search-results-preview" class="hidden" style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.75rem;"></div>
         </section>
     </div>
 
-    <!-- JavaScript Single-Page Application (SPA) Engine -->
+    <!-- Client-side SPA Automation Script -->
     <script>
-        let activeRoleFilter = "ALL";
+        function updateFileName(input) {
+            const labelText = document.getElementById("file-label-text");
+            if (input.files && input.files.length > 0) {
+                if (input.files.length === 1) {
+                    labelText.textContent = `Selected: ${input.files[0].name}`;
+                } else {
+                    labelText.textContent = `Selected ${input.files.length} files`;
+                }
+            } else {
+                labelText.textContent = "Select PDF or TXT files to upload";
+            }
+        }
 
         function syncLabels() {
             const modeEl = document.getElementById("shingle-mode");
@@ -1218,39 +731,40 @@
 
         window.addEventListener("pageshow", function () {
             const btn = document.getElementById("analyze-submit-btn");
-            const upBtn = document.getElementById("analyze-upload-btn");
             if (btn) btn.disabled = false;
-            if (upBtn) upBtn.disabled = false;
             syncLabels();
         });
 
-        function fillQuery(q) {
-            const input = document.getElementById("query-input");
-            if (input) {
-                input.value = q;
-                document.getElementById("search-form").dispatchEvent(new Event("submit"));
-            }
-        }
-
-        // ------------------------------------------------------------- Asynchronous Analysis Form
+        // Async Upload & Analysis Submission
         const analyzeForm = document.getElementById("analyze-form");
         if (analyzeForm) {
             analyzeForm.addEventListener("submit", async function (e) {
                 e.preventDefault();
 
                 const btn = document.getElementById("analyze-submit-btn");
-                const uploadBtn = document.getElementById("analyze-upload-btn");
-                const spinner = document.getElementById("analyze-spinner");
+                const btnSpinner = document.getElementById("btn-spinner");
+                const btnText = document.getElementById("btn-text");
+                const spinnerText = document.getElementById("analyze-spinner-text");
                 const errBanner = document.getElementById("analyze-error-banner");
+                const fileInput = document.getElementById("file-input");
 
                 if (errBanner) {
                     errBanner.classList.add("hidden");
                     errBanner.textContent = "";
                 }
 
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    if (errBanner) {
+                        errBanner.textContent = "Please select at least one PDF or TXT file to upload.";
+                        errBanner.classList.remove("hidden");
+                    }
+                    return;
+                }
+
                 if (btn) btn.disabled = true;
-                if (uploadBtn) uploadBtn.disabled = true;
-                if (spinner) spinner.classList.remove("hidden");
+                if (btnSpinner) btnSpinner.classList.remove("hidden");
+                if (btnText) btnText.textContent = "Analyzing files...";
+                if (spinnerText) spinnerText.classList.remove("hidden");
 
                 const formData = new FormData(analyzeForm);
 
@@ -1271,374 +785,119 @@
                     }
 
                     if (data.analysis) {
-                        renderAnalysisDOM(data.analysis);
+                        updateDashboardKPIs(data.analysis);
+                        renderSummaryBox(data.analysis);
                     }
                 } catch (err) {
                     if (errBanner) {
-                        errBanner.textContent = "Network error while submitting analysis.";
+                        errBanner.textContent = "Network error while submitting files.";
                         errBanner.classList.remove("hidden");
                     }
                 } finally {
                     if (btn) btn.disabled = false;
-                    if (uploadBtn) uploadBtn.disabled = false;
-                    if (spinner) spinner.classList.add("hidden");
+                    if (btnSpinner) btnSpinner.classList.add("hidden");
+                    if (btnText) btnText.textContent = "Analyze uploaded files";
+                    if (spinnerText) spinnerText.classList.add("hidden");
                 }
             });
         }
 
-        function renderAnalysisDOM(analysis) {
+        function updateDashboardKPIs(analysis) {
             const m = analysis.metrics;
-            const subtitleEl = document.getElementById("analysis-subtitle");
-            if (subtitleEl) {
-                subtitleEl.textContent = `Source: ${analysis.source_label} · Cutoff: ${m.threshold}%`;
-            }
+            const docEl = document.getElementById("kpi-num-docs");
+            if (docEl) docEl.textContent = String(m.document_count);
 
-            // Warnings
-            const warnContainer = document.getElementById("analysis-warnings-container");
-            if (warnContainer) {
-                if (analysis.warnings && analysis.warnings.length > 0) {
-                    warnContainer.innerHTML = `
-                        <div class="alert-warning">
-                            <ul style="margin: 0; padding-left: 1.2rem;">
-                                ${analysis.warnings.map(w => `<li>${escapeHtml(w)}</li>`).join("")}
-                            </ul>
-                        </div>`;
-                } else {
-                    warnContainer.innerHTML = "";
-                }
-            }
+            const timeEl = document.getElementById("kpi-lsh-time");
+            if (timeEl) timeEl.textContent = String(m.lsh_ms);
 
-            // Verified Pairs Table
-            const pairsContainer = document.getElementById("pairs-table-container");
-            if (pairsContainer) {
-                if (analysis.pairs && analysis.pairs.length > 0) {
-                    pairsContainer.innerHTML = `
-                        <div class="table-wrap">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Document Pair</th>
-                                        <th>Jaccard Similarity</th>
-                                        <th>Band Collisions</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${analysis.pairs.map(p => `
-                                        <tr>
-                                            <td><strong>${escapeHtml(p.doc_a)}</strong> ↔ <strong>${escapeHtml(p.doc_b)}</strong></td>
-                                            <td>
-                                                <strong>${p.similarity_text}%</strong>
-                                                <div class="score-track"><i style="width: ${p.similarity}%"></i></div>
-                                            </td>
-                                            <td><span class="badge">${p.shared_buckets} bands</span></td>
-                                            <td><span class="status good">${escapeHtml(p.status)}</span></td>
-                                        </tr>
-                                    `).join("")}
-                                </tbody>
-                            </table>
-                        </div>`;
-                } else {
-                    pairsContainer.innerHTML = `<p class="muted" style="padding: 1rem 0;">No document pairs met the ${m.threshold}% similarity cutoff.</p>`;
-                }
-            }
+            const matchEl = document.getElementById("kpi-verified-matches");
+            if (matchEl) matchEl.textContent = String(analysis.pairs ? analysis.pairs.length : 0);
 
-            // Missed Pairs
-            const missedContainer = document.getElementById("missed-pairs-container");
-            if (missedContainer) {
-                const missed = (analysis.brute_force && analysis.brute_force.pairs)
-                    ? analysis.brute_force.pairs.filter(p => !p.found_by_lsh)
-                    : [];
-                if (missed.length > 0) {
-                    missedContainer.innerHTML = `
-                        <div class="alert-warning" style="margin-top: 0.85rem;">
-                            <strong>Missed by LSH (${missed.length})</strong>
-                            <ul style="margin: 0.35rem 0 0; padding-left: 1.2rem; font-size: 0.8rem;">
-                                ${missed.map(p => `<li>${escapeHtml(p.doc_a)} ↔ ${escapeHtml(p.doc_b)}: ${p.similarity_text}%</li>`).join("")}
-                            </ul>
-                        </div>`;
-                } else {
-                    missedContainer.innerHTML = "";
-                }
-            }
+            const pruneEl = document.getElementById("kpi-pruned");
+            if (pruneEl) pruneEl.textContent = `${m.candidate_reduction}%`;
+        }
 
-            // Rejected Diagnostics
-            const rejectedContainer = document.getElementById("rejected-pairs-container");
-            if (rejectedContainer) {
-                if (analysis.rejected_pairs && analysis.rejected_pairs.length > 0) {
-                    rejectedContainer.innerHTML = `
-                        <details style="margin-top: 0.85rem;">
-                            <summary class="muted" style="font-size: 0.8rem; cursor: pointer; font-weight: 600;">
-                                Candidate Diagnostics — Below Cutoff (${analysis.rejected_pairs.length})
-                            </summary>
-                            <div class="table-wrap" style="margin-top: 0.4rem;">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Candidate Pair</th>
-                                            <th>Exact Jaccard</th>
-                                            <th>Shared Bands</th>
-                                            <th>Decision</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${analysis.rejected_pairs.map(p => `
-                                            <tr>
-                                                <td>${escapeHtml(p.doc_a)} ↔ ${escapeHtml(p.doc_b)}</td>
-                                                <td>${p.similarity_text}%</td>
-                                                <td>${p.shared_buckets}</td>
-                                                <td><span class="status neutral">${escapeHtml(p.status)}</span></td>
-                                            </tr>
-                                        `).join("")}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </details>`;
-                } else {
-                    rejectedContainer.innerHTML = "";
-                }
-            }
+        function renderSummaryBox(analysis) {
+            const m = analysis.metrics;
+            const wrap = document.getElementById("analysis-summary-wrapper");
+            if (!wrap) return;
 
-            // Performance Table
-            const perfContainer = document.getElementById("performance-table-container");
-            if (perfContainer) {
-                const recallDisplay = (m.recall !== null && m.recall !== undefined) ? (m.recall * 100).toFixed(1) + "%" : "n/a";
-                const candPrecDisplay = (m.candidate_precision !== null && m.candidate_precision !== undefined) ? (m.candidate_precision * 100).toFixed(1) + "%" : "n/a";
-                const precDisplay = (m.precision !== null && m.precision !== undefined) ? m.precision : "n/a";
-                const f1Display = (m.f1 !== null && m.f1 !== undefined) ? m.f1 : "n/a";
+            const recallStr = m.recall !== null ? (m.recall * 100).toFixed(1) + "%" : "100.0%";
+            const precStr = m.precision !== null ? (m.precision * 100).toFixed(1) + "%" : "100.0%";
+            const maxSimStr = m.max_similarity_text || "0.00";
 
-                perfContainer.innerHTML = `
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Measure</th>
-                                    <th>LSH Sub-Quadratic</th>
-                                    <th>Brute Force (n²)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Execution Time (ms)
-                                        ${m.timing_repeats > 1 ? `<br /><small class="muted">median of ${m.timing_repeats} runs</small>` : ""}
-                                    </td>
-                                    <td>
-                                        <strong>${m.lsh_ms} ms</strong>
-                                        <br />
-                                        <small class="muted">
-                                            shingle hashing ${m.hashing_ms} · MinHash ${m.minhash_ms} · banding ${m.banding_ms} · verify ${m.verify_ms}
-                                        </small>
-                                    </td>
-                                    <td><strong>${m.brute_ms} ms</strong></td>
-                                </tr>
-                                <tr>
-                                    <td>Exact Comparisons</td>
-                                    <td><strong>${Number(m.lsh_comparisons).toLocaleString()}</strong></td>
-                                    <td><strong>${Number(m.brute_comparisons).toLocaleString()}</strong></td>
-                                </tr>
-                                <tr>
-                                    <td>Pairs at or above ${m.threshold}%</td>
-                                    <td><strong>${m.found_pairs}</strong></td>
-                                    <td><strong>${m.true_pairs}</strong></td>
-                                </tr>
-                                <tr>
-                                    <td>Recall / Candidate Precision</td>
-                                    <td><strong>${recallDisplay}</strong> / <strong>${candPrecDisplay}</strong></td>
-                                    <td>100% / 100%</td>
-                                </tr>
-                                <tr>
-                                    <td>Post-Verify Precision / F1</td>
-                                    <td><strong>${precDisplay}</strong> / <strong>${f1Display}</strong></td>
-                                    <td>1.0 / 1.0</td>
-                                </tr>
-                                <tr>
-                                    <td>Speedup / Pruned Comparisons</td>
-                                    <td><strong style="color: var(--primary);">${m.speedup}×</strong></td>
-                                    <td><strong style="color: var(--success);">${m.candidate_reduction}% pruned</strong></td>
-                                </tr>
-                            </tbody>
-                        </table>
+            wrap.innerHTML = `
+                <div class="summary-box">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                        <div>
+                            <h3 style="font-size: 1.1rem; color: #065f46; font-weight: 700;">
+                                ✓ Analysis Completed: ${analysis.documents.length} Documents Processed
+                            </h3>
+                            <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 0.15rem;">
+                                ${escapeHtml(analysis.source_label)} · Cutoff threshold: ${m.threshold}%
+                            </p>
+                        </div>
+                        <a href="/detailed-analysis" class="btn-primary">
+                            View Detailed Analysis &amp; Visualizations →
+                        </a>
                     </div>
-                    <p class="muted" style="margin-top: 0.65rem; font-size: 0.73rem;">
-                        Shared extraction (${m.extraction_ms} ms) and text cleaning (${m.preprocessing_ms} ms) are measured separately.
-                    </p>`;
-            }
+
+                    <div class="summary-stats">
+                        <div class="stat-item">
+                            <span class="lbl">Near-Duplicate Pairs</span>
+                            <span class="val" style="color: var(--primary);">${analysis.pairs ? analysis.pairs.length : 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="lbl">Max Similarity Observed</span>
+                            <span class="val">${maxSimStr}%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="lbl">Empirical Recall</span>
+                            <span class="val">${recallStr}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="lbl">Empirical Precision</span>
+                            <span class="val">${precStr}</span>
+                        </div>
+                    </div>
+                </div>`;
+            wrap.classList.remove("hidden");
         }
 
-        // ------------------------------------------------------------- Dynamic Filtering for 4-Bucket View
-        function applyRoleFilter(role) {
-            activeRoleFilter = role || "ALL";
-            const roleSelect = document.getElementById("role-select");
-            if (roleSelect && roleSelect.value !== activeRoleFilter) {
-                roleSelect.value = activeRoleFilter;
-            }
-
-            const chips = document.querySelectorAll(".role-chip");
-            chips.forEach((chip) => {
-                if (chip.getAttribute("data-role-filter") === activeRoleFilter) {
-                    chip.classList.add("active");
-                } else {
-                    chip.classList.remove("active");
-                }
-            });
-
-            filterBucketCards();
-        }
-
-        function filterBucketCards() {
-            const searchInput = document.getElementById("bucket-search-input");
-            const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
-            const columns = document.querySelectorAll(".bucket-column");
-
-            let totalVisible = 0;
-
-            columns.forEach((col) => {
-                const cards = col.querySelectorAll(".record-card");
-                let colVisible = 0;
-
-                cards.forEach((card) => {
-                    const cardRole = card.getAttribute("data-role") || "";
-                    const cardName = card.getAttribute("data-name") || "";
-                    const cardHash = card.getAttribute("data-hash") || "";
-
-                    const roleMatches = activeRoleFilter === "ALL" || cardRole === activeRoleFilter;
-                    const textMatches = !query || cardName.includes(query) || cardHash.includes(query) || cardRole.toLowerCase().includes(query);
-
-                    if (roleMatches && textMatches) {
-                        card.classList.remove("hidden");
-                        colVisible += 1;
-                        totalVisible += 1;
-                    } else {
-                        card.classList.add("hidden");
-                    }
-                });
-
-                const countSpan = col.querySelector(".bucket-visible-count");
-                if (countSpan) countSpan.textContent = String(colVisible);
-            });
-        }
-
-        // ------------------------------------------------------------- Tab Navigation
-        function switchTab(tab) {
-            const bucketsSec = document.getElementById("buckets-section");
-            const formsWrap = document.getElementById("forms-wrapper");
-            const resPerfWrap = document.getElementById("results-and-perf-wrapper");
-            const searchSec = document.getElementById("search-section");
-            const perfSec = document.getElementById("performance-section");
-
-            document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-
-            if (tab === "buckets") {
-                const bBtn = document.getElementById("tab-buckets-btn");
-                if (bBtn) bBtn.classList.add("active");
-                if (bucketsSec) bucketsSec.classList.remove("hidden");
-                if (formsWrap) formsWrap.classList.add("hidden");
-                if (resPerfWrap) resPerfWrap.classList.add("hidden");
-            } else if (tab === "search" || tab === "results") {
-                const sBtn = document.getElementById("tab-search-btn");
-                if (sBtn) sBtn.classList.add("active");
-                if (formsWrap) formsWrap.classList.remove("hidden");
-                if (resPerfWrap) resPerfWrap.classList.remove("hidden");
-                if (searchSec) searchSec.classList.remove("hidden");
-                if (perfSec) perfSec.classList.add("hidden");
-                if (bucketsSec) bucketsSec.classList.add("hidden");
-            } else if (tab === "performance") {
-                const pBtn = document.getElementById("tab-perf-btn");
-                if (pBtn) pBtn.classList.add("active");
-                if (resPerfWrap) resPerfWrap.classList.remove("hidden");
-                if (perfSec) perfSec.classList.remove("hidden");
-                if (searchSec) searchSec.classList.add("hidden");
-                if (formsWrap) formsWrap.classList.add("hidden");
-                if (bucketsSec) bucketsSec.classList.add("hidden");
-                refreshMetrics();
-            } else {
-                const aBtn = document.getElementById("tab-all-btn");
-                if (aBtn) aBtn.classList.add("active");
-                if (formsWrap) formsWrap.classList.remove("hidden");
-                if (resPerfWrap) resPerfWrap.classList.remove("hidden");
-                if (searchSec) searchSec.classList.remove("hidden");
-                if (perfSec) perfSec.classList.remove("hidden");
-                if (bucketsSec) bucketsSec.classList.remove("hidden");
-            }
-        }
-
-        async function refreshMetrics() {
-            try {
-                const res = await fetch("/api/performance", {
-                    headers: { "X-Requested-With": "XMLHttpRequest" }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    // If analysis metrics exist on data, re-render
-                    if (data.analysis_metrics) {
-                        renderAnalysisDOM({ metrics: data.analysis_metrics });
-                    }
-                }
-            } catch (err) {
-                console.error("Failed to refresh metrics:", err);
-            }
-        }
-
-        // ------------------------------------------------------------- Real-time Query Search
-        const searchFormEl = document.getElementById("search-form");
-        if (searchFormEl) {
-            searchFormEl.addEventListener("submit", async (e) => {
+        // Quick Query Search
+        const searchForm = document.getElementById("search-form");
+        if (searchForm) {
+            searchForm.addEventListener("submit", async function(e) {
                 e.preventDefault();
-                const query = document.getElementById("query-input").value.trim();
+                const q = document.getElementById("query-input").value.trim();
                 const top_k = parseInt(document.getElementById("topk-input").value || "5", 10);
-                const errBanner = document.getElementById("search-error-banner");
-                const resultsList = document.getElementById("results-list");
-
-                if (errBanner) errBanner.classList.add("hidden");
-                if (!query) {
-                    if (errBanner) {
-                        errBanner.textContent = "Please enter a search query.";
-                        errBanner.classList.remove("hidden");
-                    }
-                    return;
-                }
+                const preview = document.getElementById("search-results-preview");
+                if (!q) return;
 
                 try {
-                    const response = await fetch("/api/search", {
+                    const res = await fetch("/api/search", {
                         method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-Requested-With": "XMLHttpRequest"
-                        },
-                        body: JSON.stringify({ query, top_k })
+                        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+                        body: JSON.stringify({ query: q, top_k: top_k })
                     });
-                    const data = await response.json();
+                    const data = await res.json();
+                    if (!res.ok) return;
 
-                    if (!response.ok) {
-                        if (errBanner) {
-                            errBanner.textContent = data.error || "Search request failed.";
-                            errBanner.classList.remove("hidden");
-                        }
-                        return;
-                    }
-
-                    if (!data.results || data.results.length === 0) {
-                        resultsList.innerHTML = '<p class="muted" style="text-align:center; padding: 1rem 0;">No document matches found above the specified threshold.</p>';
-                        return;
-                    }
-
-                    resultsList.innerHTML = data.results.map((r) => `
-                        <div class="result-item">
-                            <div class="result-top">
-                                <strong>${escapeHtml(r.doc_id)}</strong>
-                                <div class="result-scores">
-                                    <span class="badge">Jaccard: ${r.exact_jaccard}</span>
-                                    <span class="badge">MinHash: ${r.estimated_similarity}</span>
+                    if (preview) {
+                        preview.classList.remove("hidden");
+                        if (!data.results || data.results.length === 0) {
+                            preview.innerHTML = `<p class="muted" style="font-size: 0.82rem;">No matching documents found above threshold.</p>`;
+                        } else {
+                            preview.innerHTML = data.results.map(r => `
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid var(--border);">
+                                    <strong style="font-size: 0.85rem;">${escapeHtml(r.doc_id)}</strong>
+                                    <span style="font-size: 0.78rem; font-weight: 700; color: var(--primary);">Jaccard: ${r.exact_jaccard}</span>
                                 </div>
-                            </div>
-                            <p class="result-snippet">${escapeHtml(r.snippet)}</p>
-                        </div>
-                    `).join("");
-                } catch (err) {
-                    if (errBanner) {
-                        errBanner.textContent = "Network error while executing query.";
-                        errBanner.classList.remove("hidden");
+                            `).join("");
+                        }
                     }
+                } catch (err) {
+                    console.error(err);
                 }
             });
         }

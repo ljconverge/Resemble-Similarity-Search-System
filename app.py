@@ -3,6 +3,13 @@ Flask Application for Resemble Similarity Search System
 =======================================================
 Web controller and REST API interfaces.
 Coordinates the LSH query and collection engines with the SHA-256 bucketing service.
+Routes:
+  - GET  /                  : Minimalist primary dashboard (index.html)
+  - POST /                  : Analyze uploaded files
+  - GET  /detailed-analysis : In-depth performance, pairwise verification, diagnostics (detailed.html)
+  - GET  /performance        : Backward-compatible performance route
+  - GET  /results            : Backward-compatible results route
+  - JSON APIs               : /api/search, /api/analyze, /api/performance, /api/buckets
 """
 
 from __future__ import annotations
@@ -14,7 +21,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 # Ensure local packages (Algorithm, services, tools) are importable
 ROOT_DIR: Path = Path(__file__).resolve().parent
@@ -41,7 +48,12 @@ from services.bucketing import (
     compute_sha256_bucket,
 )
 
-SAMPLE_FOLDER: Path = ROOT_DIR / "Document"
+# New Directory Structure
+SYNTHETIC_FOLDER: Path = ROOT_DIR / "synthetic_datasets"
+REAL_WORLD_FOLDER: Path = ROOT_DIR / "real_world_dataset"
+RESEARCH_FOLDER: Path = ROOT_DIR / "research_papers"
+SAMPLE_FOLDER: Path = SYNTHETIC_FOLDER
+
 ALLOWED_EXTENSIONS: Set[str] = {".pdf", ".txt"}
 
 DEFAULT_CORPUS: Dict[str, str] = {
@@ -201,11 +213,22 @@ def create_app(engine: Optional[LSHEngine] = None) -> Flask:
         if err or validated is None:
             return None, err
 
-        source = str(form_data.get("source", "sample")).strip().lower()
+        source = str(form_data.get("source", "upload")).strip().lower()
         t0 = time.perf_counter()
         docs: Dict[str, str] = {}
 
-        if source == "upload":
+        if source == "sample":
+            target_folder = SYNTHETIC_FOLDER if SYNTHETIC_FOLDER.is_dir() else ROOT_DIR / "Document"
+            if not target_folder.is_dir():
+                return None, f"Sample folder '{target_folder}' was not found."
+            docs = load_folder(target_folder)
+            source_label = "Synthetic Datasets (10 docs)"
+        elif source == "real_world":
+            if not REAL_WORLD_FOLDER.is_dir():
+                return None, f"Real-world folder '{REAL_WORLD_FOLDER}' was not found."
+            docs = load_folder(REAL_WORLD_FOLDER)
+            source_label = "Real-World Dataset (17 papers)"
+        else:
             uploaded_files = [
                 f for f in request.files.getlist("documents") if f and f.filename
             ]
@@ -226,11 +249,6 @@ def create_app(engine: Optional[LSHEngine] = None) -> Flask:
                 raw_bytes = storage.read()
                 docs[disp_name] = extract_text_from_bytes(disp_name, raw_bytes)
             source_label = f"{len(docs)} uploaded file(s)"
-        else:
-            if not SAMPLE_FOLDER.is_dir():
-                return None, "Bundled sample Document/ folder was not found."
-            docs = load_folder(SAMPLE_FOLDER)
-            source_label = "Bundled sample PDFs (Document/)"
 
         extraction_ms = (time.perf_counter() - t0) * 1000.0
         try:
@@ -265,22 +283,25 @@ def create_app(engine: Optional[LSHEngine] = None) -> Flask:
             ):
                 if err:
                     return jsonify({"error": err}), 400
-                return jsonify({"analysis": analysis}), 200
+                return jsonify({"analysis": analysis, "redirect_url": "/detailed-analysis"}), 200
 
             return render_template(
                 "index.html",
                 **_template_context(
                     analysis=analysis,
                     error=err,
-                    active_tab="results" if analysis else "all",
                 ),
             ), (400 if err else 200)
 
         return render_template("index.html", **_template_context())
 
+    @app.route("/detailed-analysis", methods=["GET"])
+    def detailed_analysis() -> Any:
+        return render_template("detailed.html", **_template_context(active_tab="detailed"))
+
     @app.route("/results", methods=["GET"])
     def results() -> Any:
-        return render_template("index.html", **_template_context(active_tab="results"))
+        return render_template("detailed.html", **_template_context(active_tab="results"))
 
     @app.route("/performance", methods=["GET"])
     def performance() -> Any:
@@ -296,7 +317,7 @@ def create_app(engine: Optional[LSHEngine] = None) -> Flask:
             return jsonify(payload), 200
 
         return render_template(
-            "index.html", **_template_context(active_tab="performance")
+            "detailed.html", **_template_context(active_tab="performance")
         )
 
     @app.route("/api/buckets", methods=["GET"])
@@ -319,7 +340,7 @@ def create_app(engine: Optional[LSHEngine] = None) -> Flask:
         analysis, err = _execute_analysis_from_request()
         if err:
             return jsonify({"error": err}), 400
-        return jsonify({"analysis": analysis}), 200
+        return jsonify({"analysis": analysis, "redirect_url": "/detailed-analysis"}), 200
 
     @app.route("/api/search", methods=["POST", "GET"])
     @app.route("/search", methods=["POST", "GET"])
@@ -352,7 +373,7 @@ def create_app(engine: Optional[LSHEngine] = None) -> Flask:
             ):
                 return jsonify(response_data), 400
             return render_template(
-                "index.html", **_template_context(**response_data)
+                "detailed.html", **_template_context(**response_data)
             ), 400
 
         hits = [
@@ -377,7 +398,7 @@ def create_app(engine: Optional[LSHEngine] = None) -> Flask:
             return jsonify(response_data), 200
 
         return render_template(
-            "index.html", **_template_context(**response_data)
+            "detailed.html", **_template_context(**response_data)
         ), 200
 
     return app
