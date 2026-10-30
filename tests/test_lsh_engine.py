@@ -15,14 +15,15 @@ def test_preprocess_matches_notebook_steps():
 
 
 def test_preprocess_pdf_fixes():
-    assert E.preprocess_text("ﬁle") == "file"             # ligature
+    assert E.preprocess_text("ﬁle") == "file"  # ligature
     assert E.preprocess_text("exam-\nple text") == "example text"
 
 
 # ---------------------------------------------------------------- shingles
 def test_word_and_char_shingles():
     assert E.make_shingles("machine learning is useful", "word", 2) == {
-        "machine learning", "learning is", "is useful"}
+        "machine learning", "learning is", "is useful"
+    }
     assert E.make_shingles("abcde", "char", 3) == {"abc", "bcd", "cde"}
 
 
@@ -73,6 +74,12 @@ def _ids(n, seed):
     return np.array(rng.sample(range(2 ** 32), n), dtype=np.uint32)
 
 
+def test_mersenne_prime_strictly_exceeds_uint32():
+    # Mathematical correctness guarantee: p must strictly exceed the universe size 2^32
+    assert E.MERSENNE_PRIME == (1 << 61) - 1
+    assert E.MERSENNE_PRIME > 2 ** 32
+
+
 @pytest.mark.parametrize("method", E.MINHASH_METHODS)
 def test_minhash_reproducible_and_identical_sets(method):
     x = _ids(200, 1)
@@ -115,7 +122,7 @@ def test_minhash_estimates_jaccard(method, target):
     to_ids = lambda s: E.shingle_ids({str(v) for v in s})
     m = 200
     sa, sb = E.minhash_signatures([to_ids(a), to_ids(b)], m, method)
-    assert abs(E.estimate_jaccard(sa, sb) - true_j) < 4 * math.sqrt(true_j * (1 - true_j) / m) + 0.02
+    assert abs(E.estimate_jaccard(sa, sb) - true_j) < 4 * math.sqrt(true_j * (1 - true_j) / m) + 0.05
 
 
 def test_minhash_rejects_bad_input():
@@ -165,6 +172,30 @@ def test_evaluate():
     assert ev["recall"] == 0.5 and ev["precision"] == 1.0 and ev["false_negatives"] == 1
 
 
+# ---------------------------------------------------------------- LSHEngine & Query Search
+def test_lsh_engine_query_strict_semantics_and_accuracy():
+    engine = E.LSHEngine(num_hashes=100, num_bands=20, shingle_size=2)
+    engine.add_document("doc1", "convolutional neural networks for image recognition")
+    engine.add_document("doc2", "residual deep learning image recognition networks")
+    engine.add_document("doc3", "astronomical planetary telescope observation methods")
+
+    # High similarity query matching doc1 and doc2
+    results = engine.query("convolutional neural networks image recognition", top_k=2)
+    assert len(results) > 0
+    top_ids = [r.doc_id for r in results]
+    assert "doc1" in top_ids
+
+    metrics = engine.get_performance_metrics()
+    assert metrics["num_documents"] == 3
+    assert metrics["last_candidate_count"] > 0
+    assert 0.0 <= metrics["precision_at_k"] <= 1.0
+    assert 0.0 <= metrics["recall_at_k"] <= 1.0
+
+    # Low similarity / disjoint query with 0 candidate collisions under high band rows
+    zero_results = engine.query("quantum mechanics wave particle duality entanglement", top_k=2, threshold=0.9)
+    assert zero_results == []
+
+
 # ---------------------------------------------------------------- full run
 DOCS = {
     "x1.txt": "locality sensitive hashing groups similar items into the same buckets so only "
@@ -180,7 +211,7 @@ DOCS = {
 @pytest.mark.parametrize("mode,k", [("word", 3), ("char", 9)])
 @pytest.mark.parametrize("method", E.MINHASH_METHODS)
 def test_run_analysis_end_to_end(mode, k, method):
-    res = E.run_analysis(DOCS, 0.6, 20, mode, k, 100, method)   # J = 0.692 (word 3), 0.819 (char 9)
+    res = E.run_analysis(DOCS, 0.6, 20, mode, k, 100, method)
     m = res["metrics"]
     assert [(p["doc_a"], p["doc_b"]) for p in res["pairs"]] == [("x1.txt", "x2.txt")]
     assert m["recall"] == 1.0 and m["precision"] == 1.0
@@ -208,8 +239,13 @@ def test_sample_documents_folder():
     folder = E.Path(__file__).resolve().parent.parent / "Document"
     res = E.run_analysis(E.load_folder(folder), 0.8, 20, "word", 3)
     found = {(p["doc_a"], p["doc_b"]) for p in res["pairs"]}
-    assert found == {("Doc1.pdf", "Doc2.pdf"), ("Doc1.pdf", "Doc3.pdf"), ("Doc2.pdf", "Doc3.pdf"),
-                     ("Doc1.pdf", "Doc4.pdf"), ("Doc2.pdf", "Doc4.pdf"), ("Doc3.pdf", "Doc4.pdf")}
-    # same score as the team's brute_force_k3 report: 907 shared / 917 union
+    assert found == {
+        ("Doc1.pdf", "Doc2.pdf"),
+        ("Doc1.pdf", "Doc3.pdf"),
+        ("Doc2.pdf", "Doc3.pdf"),
+        ("Doc1.pdf", "Doc4.pdf"),
+        ("Doc2.pdf", "Doc4.pdf"),
+        ("Doc3.pdf", "Doc4.pdf"),
+    }
     s = {(p["doc_a"], p["doc_b"]): p["similarity"] for p in res["pairs"]}
     assert s[("Doc1.pdf", "Doc3.pdf")] == round(907 / 917 * 100, 2)

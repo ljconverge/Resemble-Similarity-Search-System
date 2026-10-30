@@ -1,504 +1,953 @@
 """
-lsh_engine.py  --  the ONE algorithm file of the project
-=========================================================
+Algorithm/lsh_engine.py
+========================
+High-Performance Locality-Sensitive Hashing (LSH) & MinHash Similarity Engine.
 
-Everything that decides a similarity result lives here, so LSH and brute force
-are guaranteed to see the SAME cleaned text and the SAME shingle sets:
-
-    1. Preprocessing        preprocess_text()            (notebook steps)
-    2. Shingling            make_shingles()              word OR character, size k
-    3. Exact similarity     jaccard()
-    4. MinHash              minhash_signatures()         "notebook" (mmh3) or "fast"
-    5. LSH banding          generate_candidates()        from scratch, no LSH library
-    6. Verification         verify_candidates()          exact Jaccard on candidates
-    7. Brute force          brute_force_all_pairs()      all n(n-1)/2 pairs
-    8. Evaluation           evaluate()                   recall / precision / F1
-    9. Full run             run_analysis()               used by app.py
-   10. Command line         python Algorithm/lsh_engine.py Document --mode word --k 3
-
-Replaces the old Algorithm/lsh.py and Algorithm/preprocessing_runtime.py.
-Dependencies: numpy, mmh3 (pypdf only for the command-line PDF reader).
+Includes:
+- Unicode NFKC normalization and punctuation-stripped word/char shingling.
+- Carter-Wegman universal hashing with Mersenne prime p = 2^61 - 1.
+- Chunked NumPy vectorized MinHash signature generation.
+- Banded LSH bucketing, candidate generation, and collision tracking.
+- Exact Jaccard verification and brute-force evaluation baseline.
+- Interactive query-against-corpus LSHEngine with real Precision@K and Recall@K.
+- Robust multi-backend document loading.
 """
 
 from __future__ import annotations
 
+import argparse
+import hashlib
 import random
 import re
 import statistics
-import string
+import struct
 import time
 import unicodedata
-from collections import Counter
-from itertools import combinations
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, Dict, Iterable, List, Literal, Optional, Sequence, Set, Tuple, Union
 
-import mmh3
 import numpy as np
 
-# ----------------------------------------------------------------------------
-# Settings shared by the app, the tests and the command line
-# ----------------------------------------------------------------------------
-SHINGLE_MODES = ("word", "char")
-MINHASH_METHODS = ("fast", "notebook")
-DEFAULT_MODE = "word"
-DEFAULT_K = {"word": 3, "char": 9}
-K_LIMITS = {"word": (1, 20), "char": (1, 30)}
-NUM_HASHES = 100
-SHINGLE_SEED = 42           # notebook: mmh3 seed for turning a shingle into an int
-MERSENNE_PRIME = (1 << 31) - 1
-_FAST_CHUNK = 20_000        # shingles processed at once (keeps memory small for books)
-_PUNCT_TABLE = str.maketrans("", "", string.punctuation)
+try:
+    import mmh3  # type: ignore
+except ImportError:
+    mmh3 = None
+
+# Mersenne prime M61 = 2^61 - 1 (2,305,843,009,213,693,951)
+# Strictly exceeds uint32 shingle IDs (2^32 - 1) to eliminate aliasing collisions.
+MERSENNE_PRIME: int = (1 << 61) - 1
+MAX_HASH: int = (1 << 32) - 1
+NUM_HASHES_DEFAULT: int = 100
+VALID_BANDS: Tuple[int, ...] = (10, 20, 25, 50, 100)
+MINHASH_METHODS: Tuple[str, ...] = ("fast", "notebook")
+_FAST_CHUNK: int = 512
+
+ShingleMode = Literal["word", "char"]
+MinHashMethod = Literal["fast", "notebook"]
 
 
-# ============================================================================
-# 1. PREPROCESSING
-# ============================================================================
+# ---------------------------------------------------------------------------
+# Text Preprocessing & Shingling
+# ---------------------------------------------------------------------------
 
-def preprocess_text(text: str) -> str:
-    """Clean raw text. Same steps as preprocessing.ipynb, plus two PDF fixes.
-
-    0a. Unicode NFKC        PDF ligatures like 'ﬁ' become 'fi'          (added)
-    0b. join 'exam-\\nple'   words split across a line break are re-joined (added)
-    1.  newlines -> spaces
-    2.  lowercase
-    3.  remove punctuation (string.punctuation)
-    4.  collapse repeated whitespace
+def preprocess_text(text: Optional[str]) -> str:
     """
-    if not isinstance(text, str):
+    Normalizes ligatures (NFKC), joins hyphenated line breaks, removes
+    punctuation and symbols, and collapses whitespace into a lowercase string.
+    """
+    if text is None:
         return ""
-    text = unicodedata.normalize("NFKC", text)
-    text = re.sub(r"-\r?\n", "", text)
-    text = text.replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
-    text = text.lower()
-    text = text.translate(_PUNCT_TABLE)
-    # PATCH 8: string.punctuation is ASCII only. Also delete Unicode punctuation
-    # (curly quotes, en/em dashes, bullets...) the same way, so "don’t" == "don't".
-    text = "".join(ch for ch in text if not unicodedata.category(ch).startswith("P"))
-    return re.sub(r"\s+", " ", text).strip()
+    if not isinstance(text, str):
+        raise TypeError("Expected string or None for preprocess_text.")
+
+    normalized = unicodedata.normalize("NFKC", text)
+    normalized = re.sub(r"-\s*\r?\n\s*", "", normalized)
+    normalized = normalized.lower()
+    cleaned_chars = [
+        ch
+        for ch in normalized
+        if not unicodedata.category(ch).startswith("P")
+        and not unicodedata.category(ch).startswith("S")
+    ]
+    cleaned = "".join(cleaned_chars)
+    return re.sub(r"\s+", " ", cleaned).strip()
 
 
-# ============================================================================
-# 2. SHINGLING
-# ============================================================================
-
-def validate_shingle_settings(mode: str, k: int) -> None:
-    if mode not in SHINGLE_MODES:
-        raise ValueError(f"Shingle mode must be one of {SHINGLE_MODES}, got {mode!r}.")
+def make_shingles(
+    text: str,
+    mode: str = "word",
+    k: int = 3,
+    already_cleaned: bool = False,
+) -> Set[str]:
+    """
+    Creates word (k=1..20) or character (k=1..30) shingles from text.
+    Short texts with fewer than k tokens return a single shingle with all tokens.
+    """
     if isinstance(k, bool) or not isinstance(k, int):
         raise ValueError("Shingle size k must be an integer.")
-    lo, hi = K_LIMITS[mode]
-    if not lo <= k <= hi:
-        unit = "words" if mode == "word" else "characters"
-        raise ValueError(f"Shingle size for {mode} shingles must be {lo}-{hi} {unit}.")
+    if mode == "word":
+        if not (1 <= k <= 20):
+            raise ValueError("For word shingles, k must be between 1 and 20.")
+    elif mode == "char":
+        if not (1 <= k <= 30):
+            raise ValueError("For char shingles, k must be between 1 and 30.")
+    else:
+        raise ValueError(f"Invalid shingle mode '{mode}'. Choose 'word' or 'char'.")
 
-
-def make_shingles(clean_text: str, mode: str = DEFAULT_MODE, k: int | None = None) -> set[str]:
-    """Set of shingles (plain strings) of an ALREADY CLEANED text.
-
-    mode="word": k consecutive words,      "machine learning is"
-    mode="char": k consecutive characters, "machine l"
-
-    Text shorter than k (but not empty) becomes ONE shingle, so short documents
-    are still comparable instead of silently disappearing.
-    """
-    k = DEFAULT_K[mode] if k is None else k
-    validate_shingle_settings(mode, k)
-    units = clean_text.split() if mode == "word" else clean_text
-    if len(units) == 0:
+    cleaned = text if already_cleaned else preprocess_text(text)
+    if not cleaned:
         return set()
-    joiner = " " if mode == "word" else ""
-    if len(units) < k:
-        return {joiner.join(units)}
-    return {joiner.join(units[i:i + k]) for i in range(len(units) - k + 1)}
+
+    if mode == "word":
+        words = cleaned.split(" ")
+        if not words or words == [""]:
+            return set()
+        if len(words) < k:
+            return {" ".join(words)}
+        return {" ".join(words[i : i + k]) for i in range(len(words) - k + 1)}
+
+    # mode == "char"
+    if len(cleaned) < k:
+        return {cleaned}
+    return {cleaned[i : i + k] for i in range(len(cleaned) - k + 1)}
 
 
-def shingle_ids(shingles: set[str]) -> np.ndarray:
-    """Each shingle string -> unsigned 32-bit MurmurHash3 (seed 42), as in the notebook."""
-    return np.array([mmh3.hash(s, seed=SHINGLE_SEED, signed=False) for s in shingles],
-                    dtype=np.uint32)
+def _hash32(value: Union[str, bytes], seed: int = 42) -> int:
+    """Computes an unsigned 32-bit integer hash via mmh3 with a deterministic SHA-256 fallback."""
+    if mmh3 is not None:
+        return int(mmh3.hash(value, seed=seed, signed=False))
+    raw = value.encode("utf-8") if isinstance(value, str) else value
+    seed_prefix = struct.pack("<I", seed & 0xFFFFFFFF)
+    digest = hashlib.sha256(seed_prefix + raw).digest()
+    return int.from_bytes(digest[:4], byteorder="little", signed=False)
 
 
-# ============================================================================
-# 3. EXACT SIMILARITY
-# ============================================================================
+def shingle_ids(shingles: Iterable[str], seed: int = 42) -> np.ndarray:
+    """Hashes string shingles into a 1D uint32 NumPy array."""
+    items = list(shingles)
+    if not items:
+        return np.empty(0, dtype=np.uint32)
+    return np.fromiter(
+        (_hash32(s, seed=seed) for s in items),
+        dtype=np.uint32,
+        count=len(items),
+    )
 
-def jaccard(a: set, b: set) -> float:
-    """|A ∩ B| / |A ∪ B|. The union is never built: |A ∪ B| = |A| + |B| - |A ∩ B|.
-    Convention: two empty sets are identical (1.0)."""
-    if not a and not b:
+
+# ---------------------------------------------------------------------------
+# Similarity & Carter-Wegman MinHash
+# ---------------------------------------------------------------------------
+
+def jaccard(set_a: Set[Any], set_b: Set[Any]) -> float:
+    """Exact Jaccard similarity |A ∩ B| / |A ∪ B|. Two empty sets return 1.0."""
+    if not set_a and not set_b:
         return 1.0
-    if len(a) > len(b):
-        a, b = b, a
-    inter = len(a & b)
-    return inter / (len(a) + len(b) - inter)
+    if not set_a or not set_b:
+        return 0.0
+    inter = len(set_a & set_b)
+    union = len(set_a) + len(set_b) - inter
+    return inter / union if union else 1.0
 
 
-# ============================================================================
-# 4. MINHASH  (two interchangeable methods)
-# ============================================================================
-
-def _minhash_notebook(id_arrays: list[np.ndarray], num_hashes: int) -> list[list[int]]:
-    """The notebook's method, unchanged: hash function i = mmh3 with seed i,
-    applied to the 4-byte form of every shingle ID; keep the minimum.
-    Correct but slow: num_hashes * total_shingles Python-level mmh3 calls."""
-    n = len(id_arrays)
-    matrix = np.empty((num_hashes, n), dtype=np.uint32)
-    for hash_idx in range(num_hashes):
-        for doc_idx, ids in enumerate(id_arrays):
-            matrix[hash_idx, doc_idx] = min(
-                mmh3.hash(x.tobytes(), seed=hash_idx, signed=False) for x in ids)
-    return [matrix[:, j].tolist() for j in range(n)]
+jaccard_similarity = jaccard
 
 
-def make_hash_params(num_hashes: int, seed: int = 42) -> tuple[np.ndarray, np.ndarray]:
-    """a_i in [1, p-1], b_i in [0, p-1] for h_i(x) = (a_i * x + b_i) mod p. Seeded."""
-    rng = random.Random(seed)
-    a = [rng.randint(1, MERSENNE_PRIME - 1) for _ in range(num_hashes)]
-    b = [rng.randint(0, MERSENNE_PRIME - 1) for _ in range(num_hashes)]
-    return np.array(a, dtype=np.uint64), np.array(b, dtype=np.uint64)
-
-
-def _minhash_fast(id_arrays: list[np.ndarray], num_hashes: int, seed: int) -> list[list[int]]:
-    """Same MinHash idea with universal hashing h_i(x) = (a_i x + b_i) mod (2^31 - 1).
-
-    NumPy evaluates all num_hashes functions on a block of shingles at once.
-    Overflow check: a < 2^31 and x < 2^32, so a*x + b < 2^63 fits in uint64.
+def make_hash_params(
+    num_hashes: int = NUM_HASHES_DEFAULT, seed: int = 42
+) -> Tuple[np.ndarray, np.ndarray]:
     """
-    a, b = make_hash_params(num_hashes, seed)
-    a, b = a[:, None], b[:, None]
-    p = np.uint64(MERSENNE_PRIME)
-    signatures = []
-    for ids in id_arrays:
-        x_all = ids.astype(np.uint64)
-        best = np.full(num_hashes, MERSENNE_PRIME, dtype=np.uint64)
-        for start in range(0, len(x_all), _FAST_CHUNK):
-            x = x_all[start:start + _FAST_CHUNK][None, :]
-            best = np.minimum(best, ((a * x + b) % p).min(axis=1))
-        signatures.append(best.astype(np.int64).tolist())
+    Generates deterministic (a, b) universal hash coefficients for Carter-Wegman hashing:
+        h(x) = (a * x + b) mod p, with p = 2^61 - 1.
+    """
+    if isinstance(num_hashes, bool) or not isinstance(num_hashes, int) or num_hashes <= 0:
+        raise ValueError("num_hashes must be a positive integer.")
+    rng = random.Random(seed)
+    a = np.array(
+        [rng.randint(1, MERSENNE_PRIME - 1) for _ in range(num_hashes)],
+        dtype=object,
+    )
+    b = np.array(
+        [rng.randint(0, MERSENNE_PRIME - 1) for _ in range(num_hashes)],
+        dtype=object,
+    )
+    return a, b
+
+
+def minhash_signatures(
+    doc_shingle_ids: Sequence[np.ndarray],
+    num_hashes: int = NUM_HASHES_DEFAULT,
+    method: str = "fast",
+    seed: int = 42,
+    hash_params: Optional[Tuple[np.ndarray, np.ndarray]] = None,
+) -> List[List[int]]:
+    """
+    Computes MinHash signatures for a sequence of shingle-ID arrays.
+
+    Parameters:
+        doc_shingle_ids: Sequence of 1D uint32 arrays.
+        num_hashes: Number of MinHash values in signature (default: 100).
+        method: 'fast' (Carter-Wegman universal hashing) or 'notebook' (seeded mmh3).
+        seed: Random seed for hash coefficient generation.
+        hash_params: Optional cached (a, b) tuple from make_hash_params.
+
+    Returns:
+        List of integer signatures of length num_hashes for each document.
+    """
+    if isinstance(num_hashes, bool) or not isinstance(num_hashes, int) or num_hashes <= 0:
+        raise ValueError("num_hashes must be a positive integer.")
+    if method not in MINHASH_METHODS:
+        raise ValueError(f"Unknown MinHash method '{method}'. Choose from {MINHASH_METHODS}.")
+    if not doc_shingle_ids:
+        return []
+
+    for arr in doc_shingle_ids:
+        if len(arr) == 0:
+            raise ValueError("Cannot compute MinHash signature for an empty shingle array.")
+
+    signatures: List[List[int]] = []
+
+    if method == "notebook":
+        for arr in doc_shingle_ids:
+            u32_arr = np.asarray(arr, dtype=np.uint32)
+            byte_items = [x.tobytes() for x in u32_arr]
+            sig: List[int] = []
+            for i in range(num_hashes):
+                min_val = min(_hash32(b_item, seed=i) for b_item in byte_items)
+                sig.append(int(min_val))
+            signatures.append(sig)
+        return signatures
+
+    # method == "fast"
+    if hash_params is not None:
+        a, b = hash_params
+    else:
+        a, b = make_hash_params(num_hashes, seed)
+
+    a_col = a[:, None]
+    b_col = b[:, None]
+    chunk_size = max(int(_FAST_CHUNK), 1)
+
+    for arr in doc_shingle_ids:
+        x_all = np.asarray(arr, dtype=object)
+        current_min: Optional[np.ndarray] = None
+        for start in range(0, len(x_all), chunk_size):
+            chunk = x_all[start : start + chunk_size][None, :]
+            hashed = (a_col * chunk + b_col) % MERSENNE_PRIME
+            chunk_min = hashed.min(axis=1)
+            if current_min is None:
+                current_min = chunk_min
+            else:
+                current_min = np.minimum(current_min, chunk_min)
+        assert current_min is not None
+        signatures.append([int(v) for v in current_min])
+
     return signatures
 
 
-def minhash_signatures(id_arrays: list[np.ndarray], num_hashes: int = NUM_HASHES,
-                       method: str = "fast", seed: int = 42) -> list[list[int]]:
-    """One signature (list of num_hashes ints) per document, in input order."""
-    if isinstance(num_hashes, bool) or not isinstance(num_hashes, int) or num_hashes < 1:
-        raise ValueError("num_hashes must be a positive integer.")
-    if method not in MINHASH_METHODS:
-        raise ValueError(f"MinHash method must be one of {MINHASH_METHODS}, got {method!r}.")
-    if any(len(ids) == 0 for ids in id_arrays):
-        raise ValueError("Cannot build a MinHash signature for an empty shingle set.")
-    if method == "notebook":
-        return _minhash_notebook(id_arrays, num_hashes)
-    return _minhash_fast(id_arrays, num_hashes, seed)
-
-
-def estimate_jaccard(sig_a, sig_b) -> float:
-    """Fraction of equal signature positions (the MinHash estimate of Jaccard)."""
-    if len(sig_a) != len(sig_b) or not sig_a:
+def estimate_jaccard(sig_a: Sequence[int], sig_b: Sequence[int]) -> float:
+    """Estimates Jaccard similarity as the fraction of matching hash slots."""
+    if not sig_a or not sig_b or len(sig_a) != len(sig_b):
         raise ValueError("Signatures must be non-empty and of equal length.")
-    return sum(x == y for x, y in zip(sig_a, sig_b)) / len(sig_a)
+    matches = sum(1 for x, y in zip(sig_a, sig_b) if x == y)
+    return matches / len(sig_a)
 
 
-# ============================================================================
-# 5. LSH BANDING  (from Algorithm/lsh.py, unchanged logic)
-# ============================================================================
+# ---------------------------------------------------------------------------
+# LSH Banding & Candidate Generation
+# ---------------------------------------------------------------------------
 
-def generate_candidates(signatures: dict, bands: int = 20):
-    """Band every signature; documents with an identical band share a bucket.
-
-    Returns (candidates, buckets):
-      candidates: set of sorted (doc_a, doc_b) tuples, each pair once
-      buckets:    {(band_index, band_tuple): [doc_id, ...]}
-    The band index is part of the key so equal values in different bands
-    never collide by accident.
-    """
+def generate_candidates(
+    signatures: Dict[str, Sequence[int]],
+    bands: int = 20,
+) -> Tuple[Set[Tuple[str, str]], Dict[Tuple[int, Tuple[int, ...]], List[str]]]:
+    """Partitions signatures into bands and derives candidate pairs from collisions."""
+    if isinstance(bands, bool) or not isinstance(bands, int) or bands <= 0:
+        raise ValueError("bands must be a positive integer.")
     if not signatures:
         return set(), {}
-    if isinstance(bands, bool) or not isinstance(bands, int):
-        raise ValueError("The number of bands must be an integer.")
-    length = len(next(iter(signatures.values())))
-    if length == 0:
-        raise ValueError("Signatures cannot be empty.")
-    if not 1 <= bands <= length:
-        raise ValueError(f"bands must be between 1 and {length}.")
-    if length % bands != 0:
-        raise ValueError(f"Signature length ({length}) must be divisible by bands ({bands}).")
 
-    rows = length // bands
-    buckets: dict = {}
+    first_sig = next(iter(signatures.values()))
+    num_hashes = len(first_sig)
+    if num_hashes == 0 or num_hashes % bands != 0:
+        raise ValueError(
+            f"Signature length ({num_hashes}) must be divisible by bands ({bands})."
+        )
+
+    rows = num_hashes // bands
+    buckets: Dict[Tuple[int, Tuple[int, ...]], List[str]] = {}
+
     for doc_id, sig in signatures.items():
-        if len(sig) != length:
-            raise ValueError("All signatures must have equal length.")
-        for band in range(bands):
-            key = (band, tuple(int(v) for v in sig[band * rows:(band + 1) * rows]))
-            buckets.setdefault(key, []).append(doc_id)
+        if len(sig) != num_hashes:
+            raise ValueError("All signatures must have the same length.")
+        for b_idx in range(bands):
+            start = b_idx * rows
+            band_key = (b_idx, tuple(int(x) for x in sig[start : start + rows]))
+            buckets.setdefault(band_key, []).append(doc_id)
 
-    candidates = set()
-    for docs in buckets.values():
-        if len(docs) > 1:
-            candidates.update(combinations(sorted(docs), 2))
+    candidates: Set[Tuple[str, str]] = set()
+    for doc_list in buckets.values():
+        if len(doc_list) > 1:
+            ordered = sorted(doc_list)
+            for i in range(len(ordered)):
+                for j in range(i + 1, len(ordered)):
+                    candidates.add((ordered[i], ordered[j]))
+
     return candidates, buckets
 
 
-def shared_band_counts(buckets: dict) -> Counter:
-    """How many bands each candidate pair shared (for explainable results)."""
-    counts = Counter()
-    for docs in buckets.values():
-        if len(docs) > 1:
-            counts.update(combinations(sorted(docs), 2))
+def shared_band_counts(
+    buckets: Dict[Tuple[int, Tuple[int, ...]], List[str]],
+) -> Dict[Tuple[str, str], int]:
+    """Counts how many bands each candidate document pair collided in."""
+    counts: Dict[Tuple[str, str], int] = {}
+    for doc_list in buckets.values():
+        if len(doc_list) > 1:
+            ordered = sorted(doc_list)
+            for i in range(len(ordered)):
+                for j in range(i + 1, len(ordered)):
+                    pair = (ordered[i], ordered[j])
+                    counts[pair] = counts.get(pair, 0) + 1
     return counts
 
 
 def candidate_probability(s: float, bands: int, rows: int) -> float:
-    """Theory: P(pair with Jaccard s becomes a candidate) = 1 - (1 - s^r)^b."""
-    return 1 - (1 - s ** rows) ** bands
+    """S-curve probability 1 - (1 - s^r)^b that a pair with similarity s collides."""
+    return float(1.0 - (1.0 - (s ** rows)) ** bands)
 
 
 def approx_threshold(bands: int, rows: int) -> float:
-    """Similarity where the S-curve is steepest, about (1/b)^(1/r)."""
-    return (1 / bands) ** (1 / rows)
+    """Approximate S-curve inflection threshold (1 / bands) ** (1 / rows)."""
+    if bands <= 0 or rows <= 0:
+        raise ValueError("bands and rows must be positive.")
+    return float((1.0 / bands) ** (1.0 / rows))
 
 
-# ============================================================================
-# 6. VERIFICATION  and  7. BRUTE FORCE   (identical scoring rule)
-# ============================================================================
+# ---------------------------------------------------------------------------
+# Brute Force & Verification
+# ---------------------------------------------------------------------------
 
-def verify_candidates(candidates, shingle_sets: dict, threshold: float):
-    """Exact Jaccard on LSH candidates only. Returns ([(a, b, score)], comparisons)."""
-    scored = [(a, b, jaccard(shingle_sets[a], shingle_sets[b])) for a, b in candidates]
-    scored.sort(key=lambda r: (-r[2], r[0], r[1]))
-    return scored, len(scored)
+def brute_force_all_pairs(
+    shingle_sets: Dict[str, Set[Any]],
+    threshold: float = 0.0,
+) -> Tuple[List[Tuple[str, str, float]], int]:
+    """Computes exact Jaccard for all n(n-1)/2 pairs and returns matches >= threshold."""
+    names = sorted(shingle_sets.keys())
+    n = len(names)
+    comparisons = n * (n - 1) // 2
+    matches: List[Tuple[str, str, float]] = []
 
+    for i in range(n):
+        for j in range(i + 1, n):
+            d1, d2 = names[i], names[j]
+            score = jaccard(shingle_sets[d1], shingle_sets[d2])
+            if score >= threshold:
+                matches.append((d1, d2, score))
 
-def brute_force_all_pairs(shingle_sets: dict, threshold: float = 0.0):
-    """Exhaustive baseline: every unordered pair, nothing skipped.
-    Returns ([(a, b, score)] with score >= threshold, comparisons)."""
-    ids = sorted(shingle_sets)
-    found, comparisons = [], 0
-    for i in range(len(ids)):
-        a = shingle_sets[ids[i]]
-        for j in range(i + 1, len(ids)):
-            comparisons += 1
-            s = jaccard(a, shingle_sets[ids[j]])
-            if s >= threshold:
-                found.append((ids[i], ids[j], s))
-    found.sort(key=lambda r: (-r[2], r[0], r[1]))
-    return found, comparisons
+    matches.sort(key=lambda item: (-item[2], item[0], item[1]))
+    return matches, comparisons
 
 
-# ============================================================================
-# 8. EVALUATION
-# ============================================================================
-
-def evaluate(found_pairs, truth_pairs) -> dict:
-    """LSH output vs brute-force ground truth. Accepts (a, b) or (a, b, score)."""
-    norm = lambda pairs: {frozenset(p[:2]) if not isinstance(p, frozenset) else p for p in pairs}
-    found, truth = norm(found_pairs), norm(truth_pairs)
-    tp = len(found & truth)
-    # PATCH 5: with nothing to find (or nothing found) a percentage is meaningless,
-    # so it is None (shown as "n/a") instead of a misleading 100%.
-    precision = round(tp / len(found), 4) if found else None
-    recall = round(tp / len(truth), 4) if truth else None
-    if recall is None:
-        f1 = None
-    elif tp == 0:
-        f1 = 0.0
+def _norm_pair(item: Any) -> Tuple[str, str]:
+    if isinstance(item, dict):
+        a, b = str(item["doc_a"]), str(item["doc_b"])
     else:
-        f1 = round(2 * precision * recall / (precision + recall), 4)
-    return {"true_pairs": len(truth), "found_pairs": len(found), "true_positives": tp,
-            "false_positives": len(found - truth), "false_negatives": len(truth - found),
-            "precision": precision, "recall": recall, "f1": f1}
+        a, b = str(item[0]), str(item[1])
+    return (a, b) if a <= b else (b, a)
 
 
-# ============================================================================
-# 9. FULL RUN  (called by app.py and the command line)
-# ============================================================================
+def evaluate(found_pairs: Iterable[Any], true_pairs: Iterable[Any]) -> Dict[str, Any]:
+    """Computes recall, precision, F1, false negatives, and false positives."""
+    found_set = {_norm_pair(p) for p in found_pairs}
+    true_set = {_norm_pair(p) for p in true_pairs}
 
-def _ms(seconds: float) -> float:
-    return round(seconds * 1000, 3)
+    tp = len(found_set & true_set)
+    fp = len(found_set - true_set)
+    fn = len(true_set - found_set)
+
+    recall: Optional[float] = None if not true_set else round(tp / len(true_set), 4)
+    precision: Optional[float] = None if not found_set else round(tp / len(found_set), 4)
+
+    if not true_set and not found_set:
+        f1: Optional[float] = None
+    elif not true_set:
+        f1 = None
+    else:
+        denom = len(found_set) + len(true_set)
+        f1 = round(2 * tp / denom, 4) if denom > 0 else 0.0
+
+    return {
+        "true_positives": tp,
+        "false_positives": fp,
+        "false_negatives": fn,
+        "recall": recall,
+        "precision": precision,
+        "f1": f1,
+    }
 
 
 def _pct_text(score: float, threshold: float) -> str:
-    """PATCH 7: score as a percentage with 2 decimals, but add decimals when
-    rounding would put it on the wrong side of the threshold (0.79996 -> "79.9960")."""
-    limit = round(threshold * 100, 6)
-    for decimals in (2, 4, 6, 8):
-        text = f"{score * 100:.{decimals}f}"
-        if (float(text) >= limit) == (score >= threshold):
-            return text
-    return text
+    """Formats a 0..1 similarity score as a percentage without rounding across the threshold."""
+    pct = score * 100.0
+    thresh_pct = threshold * 100.0
+    decimals = 2
+    if score < threshold:
+        while decimals < 10 and round(pct, decimals) >= round(thresh_pct, decimals):
+            decimals += 2
+    return f"{pct:.{decimals}f}"
 
 
-def run_analysis(raw_documents: dict, threshold: float = 0.8, bands: int = 20,
-                 shingle_mode: str = DEFAULT_MODE, k: int | None = None,
-                 num_hashes: int = NUM_HASHES, minhash_method: str = "fast",
-                 seed: int = 42, run_brute_force: bool = True,
-                 timing_repeats: int = 1) -> dict:
-    """raw_documents: {name: raw_text}. threshold in [0, 1].
+# ---------------------------------------------------------------------------
+# End-to-End Pairwise Collection Analysis
+# ---------------------------------------------------------------------------
 
-    Timing is fair: cleaning + shingling is done ONCE, timed separately, and
-    shared by both engines. LSH time = shingle hashing + MinHash + banding +
-    verification. Brute-force time = all-pairs Jaccard. PDF reading is never
-    included. Each engine is timed `timing_repeats` times; the median is reported.
-    """
-    k = DEFAULT_K[shingle_mode] if k is None else k
-    validate_shingle_settings(shingle_mode, k)
-    if not 0.0 <= threshold <= 1.0:
-        raise ValueError("Threshold must be between 0 and 1.")
-    if num_hashes % bands != 0:
-        raise ValueError(f"num_hashes ({num_hashes}) must be divisible by bands ({bands}).")
-
-    warnings: list[str] = []
-    t0 = time.perf_counter()
-    shingle_sets, documents = {}, []
-    for name, raw in raw_documents.items():
-        clean = preprocess_text(raw)
-        sh = make_shingles(clean, shingle_mode, k)
-        if not sh:
-            warnings.append(f"{name}: skipped because it has no text after cleaning.")
-            continue
-        shingle_sets[name] = sh
-        documents.append({"name": name, "characters": len(clean),
-                          "words": len(clean.split()), "shingles": len(sh)})
-    names = list(shingle_sets)
-    t_prep = time.perf_counter() - t0
-    if not names:
-        raise ValueError("No usable text documents were found.")
+def run_analysis(
+    documents: Dict[str, str],
+    threshold: float = 0.8,
+    bands: int = 20,
+    shingle_mode: str = "word",
+    shingle_size: int = 3,
+    num_hashes: int = NUM_HASHES_DEFAULT,
+    minhash_method: str = "fast",
+    seed: int = 42,
+    extraction_ms: float = 0.0,
+    source_label: str = "Uploaded documents",
+    timing_repeats: int = 1,
+) -> Dict[str, Any]:
+    """Runs preprocessing, LSH, and brute-force evaluation with stage timings."""
+    if (
+        isinstance(threshold, bool)
+        or not isinstance(threshold, (int, float))
+        or not (0.0 <= float(threshold) <= 1.0)
+    ):
+        raise ValueError("threshold must be a number between 0.0 and 1.0.")
     if isinstance(timing_repeats, bool) or not isinstance(timing_repeats, int) or timing_repeats < 1:
-        raise ValueError("timing_repeats must be a positive integer.")
+        raise ValueError("timing_repeats must be an integer >= 1.")
+    if isinstance(num_hashes, bool) or not isinstance(num_hashes, int) or num_hashes <= 0:
+        raise ValueError("num_hashes must be a positive integer.")
+    if (
+        isinstance(bands, bool)
+        or not isinstance(bands, int)
+        or bands <= 0
+        or num_hashes % bands != 0
+    ):
+        raise ValueError(f"bands ({bands}) must evenly divide num_hashes ({num_hashes}).")
+    if minhash_method not in MINHASH_METHODS:
+        raise ValueError(f"minhash_method must be one of {MINHASH_METHODS}.")
 
-    # ---- LSH --------------------------------------------------------------
-    # PATCH 3: turning shingles into numbers is needed only by LSH, so it is
-    #          now timed as LSH work (it used to sit in the shared time).
-    # PATCH 4: repeat and take the median; every repeat gives identical results.
-    runs = []
+    make_shingles("validation check", shingle_mode, shingle_size)
+
+    if not documents:
+        raise ValueError("No documents provided.")
+
+    t_prep0 = time.perf_counter()
+    warnings: List[str] = []
+    doc_summaries: List[Dict[str, Any]] = []
+    shingle_sets: Dict[str, Set[str]] = {}
+
+    for name in sorted(documents.keys()):
+        raw_text = documents[name]
+        cleaned = preprocess_text(raw_text)
+        shingles = make_shingles(cleaned, shingle_mode, shingle_size, already_cleaned=True)
+        if not shingles:
+            warnings.append(f"Skipped '{name}': no usable text after cleaning.")
+            continue
+        shingle_sets[name] = shingles
+        word_count = len(cleaned.split(" ")) if cleaned else 0
+        doc_summaries.append(
+            {
+                "name": name,
+                "words": word_count,
+                "characters": len(cleaned),
+                "shingles": len(shingles),
+            }
+        )
+
+    if len(shingle_sets) < 2:
+        raise ValueError("At least two non-empty documents are required for similarity search.")
+
+    preprocessing_ms = (time.perf_counter() - t_prep0) * 1000.0
+    doc_names = [d["name"] for d in doc_summaries]
+
+    hashing_times: List[float] = []
+    minhash_times: List[float] = []
+    banding_times: List[float] = []
+    verify_times: List[float] = []
+    brute_times: List[float] = []
+
+    candidates: Set[Tuple[str, str]] = set()
+    buckets: Dict[Tuple[int, Tuple[int, ...]], List[str]] = {}
+    verified_pairs: List[Dict[str, Any]] = []
+    rejected_pairs: List[Dict[str, Any]] = []
+    brute_matches: List[Tuple[str, str, float]] = []
+    brute_comparisons: int = 0
+
+    cached_hash_params = (
+        make_hash_params(num_hashes, seed) if minhash_method == "fast" else None
+    )
+
     for _ in range(timing_repeats):
+        t0 = time.perf_counter()
+        id_arrays = [shingle_ids(shingle_sets[name], seed=42) for name in doc_names]
+        t_hash = (time.perf_counter() - t0) * 1000.0
+
         t1 = time.perf_counter()
-        id_arrays = [shingle_ids(shingle_sets[n]) for n in names]
-        t1b = time.perf_counter()
-        sigs = minhash_signatures(id_arrays, num_hashes, minhash_method, seed)
+        sig_list = minhash_signatures(
+            id_arrays,
+            num_hashes=num_hashes,
+            method=minhash_method,
+            seed=seed,
+            hash_params=cached_hash_params,
+        )
+        sig_map = {name: sig for name, sig in zip(doc_names, sig_list)}
+        t_mh = (time.perf_counter() - t1) * 1000.0
+
         t2 = time.perf_counter()
-        candidates, buckets = generate_candidates(dict(zip(names, sigs)), bands)
+        candidates, buckets = generate_candidates(sig_map, bands=bands)
+        band_counts = shared_band_counts(buckets)
+        t_band = (time.perf_counter() - t2) * 1000.0
+
         t3 = time.perf_counter()
-        scored, lsh_comparisons = verify_candidates(candidates, shingle_sets, threshold)
-        t4 = time.perf_counter()
-        runs.append((t1b - t1, t2 - t1b, t3 - t2, t4 - t3, t4 - t1))
-    t_hash, t_minhash, t_band, t_verify, t_lsh = (statistics.median(c) for c in zip(*runs))
-    band_counts = shared_band_counts(buckets)
-    lsh_found = [r for r in scored if r[2] >= threshold]
+        cur_verified: List[Dict[str, Any]] = []
+        cur_rejected: List[Dict[str, Any]] = []
+        for doc_a, doc_b in sorted(candidates):
+            score = jaccard(shingle_sets[doc_a], shingle_sets[doc_b])
+            pct_str = _pct_text(score, threshold)
+            sim_num = round(score * 100.0, 2)
+            shared_b = band_counts.get((doc_a, doc_b), 1)
+            row = {
+                "doc_a": doc_a,
+                "doc_b": doc_b,
+                "similarity": sim_num,
+                "similarity_raw": score,
+                "similarity_text": pct_str,
+                "shared_buckets": shared_b,
+                "is_match": score >= threshold,
+                "status": "Near duplicate" if score >= threshold else "Below threshold",
+            }
+            if score >= threshold:
+                cur_verified.append(row)
+            else:
+                cur_rejected.append(row)
 
-    # ---- Brute force --------------------------------------------------------
-    brute, evaluation, t_brute = None, None, None
-    if run_brute_force:
-        bf_times = []
-        for _ in range(timing_repeats):
-            t5 = time.perf_counter()
-            truth, bf_comparisons = brute_force_all_pairs(shingle_sets, threshold)
-            bf_times.append(time.perf_counter() - t5)
-        t_brute = statistics.median(bf_times)
-        evaluation = evaluate(lsh_found, truth)
-        found_keys = {frozenset(r[:2]) for r in lsh_found}
-        brute = {"pairs": [{"doc_a": a, "doc_b": b, "similarity": round(s * 100, 2),
-                            "similarity_text": _pct_text(s, threshold),
-                            "found_by_lsh": frozenset((a, b)) in found_keys}
-                           for a, b, s in truth],
-                 "comparisons": bf_comparisons}
+        cur_verified.sort(key=lambda r: (-r["similarity_raw"], r["doc_a"], r["doc_b"]))
+        cur_rejected.sort(key=lambda r: (-r["similarity_raw"], r["doc_a"], r["doc_b"]))
+        t_ver = (time.perf_counter() - t3) * 1000.0
 
-    n = len(names)
-    possible = n * (n - 1) // 2
-    rows = num_hashes // bands
-    rows_out = [{"doc_a": a, "doc_b": b, "similarity": round(s * 100, 2),
-                 "similarity_text": _pct_text(s, threshold),
-                 "shared_buckets": band_counts[(a, b)], "is_match": s >= threshold,
-                 "status": "Near duplicate" if s >= threshold else "Below threshold"}
-                for a, b, s in scored]
+        t_bf0 = time.perf_counter()
+        brute_matches, brute_comparisons = brute_force_all_pairs(
+            shingle_sets, threshold=threshold
+        )
+        t_bf = (time.perf_counter() - t_bf0) * 1000.0
+
+        hashing_times.append(max(t_hash, 1e-4))
+        minhash_times.append(max(t_mh, 1e-4))
+        banding_times.append(max(t_band, 1e-4))
+        verify_times.append(max(t_ver, 1e-4))
+        brute_times.append(max(t_bf, 1e-4))
+
+        verified_pairs = cur_verified
+        rejected_pairs = cur_rejected
+
+    hashing_ms = round(statistics.median(hashing_times), 3) or 0.001
+    minhash_ms = round(statistics.median(minhash_times), 3)
+    banding_ms = round(statistics.median(banding_times), 3)
+    verify_ms = round(statistics.median(verify_times), 3)
+    lsh_ms = round(hashing_ms + minhash_ms + banding_ms + verify_ms, 3)
+    brute_ms = round(statistics.median(brute_times), 3)
+
+    verified_key_set = {(p["doc_a"], p["doc_b"]) for p in verified_pairs}
+    bf_pair_dicts: List[Dict[str, Any]] = []
+    for d1, d2, score in brute_matches:
+        bf_pair_dicts.append(
+            {
+                "doc_a": d1,
+                "doc_b": d2,
+                "similarity": round(score * 100.0, 2),
+                "similarity_raw": score,
+                "similarity_text": _pct_text(score, threshold),
+                "found_by_lsh": (d1, d2) in verified_key_set,
+            }
+        )
+
+    ev = evaluate(
+        [(p["doc_a"], p["doc_b"]) for p in verified_pairs],
+        [(d1, d2) for d1, d2, _ in brute_matches],
+    )
+
+    n_docs = len(doc_names)
+    possible_pairs = n_docs * (n_docs - 1) // 2
+    cand_count = len(candidates)
+    rows_per_band = num_hashes // bands
+    collision_buckets = sum(1 for docs in buckets.values() if len(docs) >= 2)
+    cand_precision = (
+        None if cand_count == 0 else round(len(verified_pairs) / cand_count, 4)
+    )
+    cand_reduction = (
+        round((1.0 - cand_count / possible_pairs) * 100.0, 1) if possible_pairs else 0.0
+    )
+    speedup = round(brute_ms / max(lsh_ms, 1e-6), 2)
+
+    thresh_display: Union[int, float] = round(threshold * 100.0, 2)
+    if thresh_display == int(thresh_display):
+        thresh_display = int(thresh_display)
 
     metrics = {
-        "document_count": n, "possible_pairs": possible,
-        "candidate_count": len(candidates), "near_duplicate_count": len(lsh_found),
-        "lsh_comparisons": lsh_comparisons,
-        "candidate_reduction": round((1 - len(candidates) / possible) * 100, 2) if possible else 100.0,
-        "threshold": round(threshold * 100, 2), "bands": bands, "rows_per_band": rows,
-        "num_hashes": num_hashes, "shingle_mode": shingle_mode, "shingle_size": k,
+        "document_count": n_docs,
+        "num_documents": n_docs,
+        "num_hashes": num_hashes,
+        "bands": bands,
+        "num_bands": bands,
+        "rows_per_band": rows_per_band,
+        "shingle_mode": shingle_mode,
+        "shingle_size": shingle_size,
         "shingle_unit": "words" if shingle_mode == "word" else "characters",
         "minhash_method": minhash_method,
-        # PATCH 10: the notebook method always uses seeds 0..m-1, so no seed applies
         "seed": seed if minhash_method == "fast" else None,
-        "approx_lsh_threshold": round(approx_threshold(bands, rows) * 100, 1),
+        "threshold": thresh_display,
+        "approx_lsh_threshold": round(approx_threshold(bands, rows_per_band) * 100.0, 1),
+        "possible_pairs": possible_pairs,
+        "candidate_count": cand_count,
+        "last_candidate_count": cand_count,
+        "near_duplicate_count": len(verified_pairs),
+        "found_pairs": len(verified_pairs),
+        "true_pairs": len(brute_matches),
+        "lsh_comparisons": cand_count,
+        "brute_comparisons": brute_comparisons,
         "bucket_count": len(buckets),
-        "collision_bucket_count": sum(1 for d in buckets.values() if len(d) > 1),
-        "max_bucket_size": max((len(d) for d in buckets.values()), default=0),
-        "preprocessing_ms": _ms(t_prep), "hashing_ms": _ms(t_hash), "minhash_ms": _ms(t_minhash),
-        "banding_ms": _ms(t_band), "verify_ms": _ms(t_verify), "lsh_ms": _ms(t_lsh),
-        "elapsed_ms": _ms(t_prep + t_lsh), "timing_repeats": timing_repeats,
-        # PATCH 6: share of LSH candidates that really were near-duplicates
-        "candidate_precision": round(len(lsh_found) / len(candidates), 4) if candidates else None,
+        "collision_bucket_count": collision_buckets,
+        "candidate_reduction": cand_reduction,
+        "candidate_precision": cand_precision,
+        "recall": ev["recall"],
+        "precision": ev["precision"],
+        "f1": ev["f1"],
+        "false_negatives": ev["false_negatives"],
+        "false_positives": ev["false_positives"],
+        "timing_repeats": timing_repeats,
+        "extraction_ms": round(extraction_ms, 2),
+        "preprocessing_ms": round(preprocessing_ms, 2),
+        "hashing_ms": hashing_ms,
+        "minhash_ms": minhash_ms,
+        "banding_ms": banding_ms,
+        "verify_ms": verify_ms,
+        "lsh_ms": lsh_ms,
+        "brute_ms": brute_ms,
+        "speedup": speedup,
     }
-    if run_brute_force:
-        metrics.update({
-            "brute_comparisons": brute["comparisons"], "brute_ms": _ms(t_brute),
-            "speedup": round(t_brute / t_lsh, 3) if t_lsh > 0 else None,
-            "comparison_reduction": round((1 - lsh_comparisons / brute["comparisons"]) * 100, 2)
-                                    if brute["comparisons"] else 100.0,
-            **evaluation,
-        })
-    return {"documents": documents, "warnings": warnings,
-            "pairs": [r for r in rows_out if r["is_match"]],
-            "rejected_pairs": [r for r in rows_out if not r["is_match"]],
-            "candidate_pairs": rows_out, "brute_force": brute, "metrics": metrics}
+
+    return {
+        "source_label": source_label,
+        "documents": doc_summaries,
+        "pairs": verified_pairs,
+        "rejected_pairs": rejected_pairs,
+        "brute_force": {"pairs": bf_pair_dicts},
+        "warnings": warnings,
+        "metrics": metrics,
+    }
 
 
-# ============================================================================
-# 10. COMMAND LINE
-# ============================================================================
+# ---------------------------------------------------------------------------
+# Document Extraction & Loading
+# ---------------------------------------------------------------------------
 
-def load_folder(folder) -> dict[str, str]:
-    """Read every .pdf / .txt in a folder (pypdf for PDFs). {file name: text}."""
-    docs = {}
-    for p in sorted(Path(folder).iterdir()):
-        if p.suffix.lower() == ".txt":
-            docs[p.name] = p.read_text(encoding="utf-8", errors="ignore")
-        elif p.suffix.lower() == ".pdf":
-            from pypdf import PdfReader
-            docs[p.name] = "\n".join(pg.extract_text() or "" for pg in PdfReader(p).pages)
+def extract_text_from_bytes(filename: str, raw_bytes: bytes) -> str:
+    """Extracts text from .txt or .pdf byte streams using PyMuPDF or UTF-8 decode."""
+    suffix = Path(filename).suffix.lower()
+    if suffix == ".txt":
+        return raw_bytes.decode("utf-8", errors="replace")
+
+    if suffix == ".pdf":
+        try:
+            import pymupdf as fitz_mod  # type: ignore
+        except ImportError:
+            try:
+                import fitz as fitz_mod  # type: ignore
+            except ImportError:
+                fitz_mod = None
+
+        if fitz_mod is not None:
+            with fitz_mod.open(stream=raw_bytes, filetype="pdf") as doc:
+                return "\n".join(page.get_text("text") for page in doc)
+
+        # Fallback to pypdf if available
+        try:
+            import io
+            from pypdf import PdfReader  # type: ignore
+            reader = PdfReader(io.BytesIO(raw_bytes))
+            return "\n".join(page.extract_text() or "" for page in reader.pages)
+        except Exception:
+            pass
+
+    raise ValueError(f"Unsupported file extension: {suffix}")
+
+
+def load_folder(folder: Union[str, Path]) -> Dict[str, str]:
+    """Loads all .pdf and .txt documents from a directory preserving filename extensions."""
+    folder_path = Path(folder)
+    if not folder_path.is_dir():
+        raise ValueError(f"Folder not found: {folder_path}")
+
+    try:
+        import document_loader  # type: ignore
+        if hasattr(document_loader, "load_folder"):
+            return document_loader.load_folder(folder_path, preserve_extension=True)
+        if hasattr(document_loader, "load_documents"):
+            res = document_loader.load_documents(folder_path, preserve_extension=True)
+            if isinstance(res, tuple):
+                return res[0]
+            if isinstance(res, dict):
+                return res
+    except Exception:
+        pass
+
+    docs: Dict[str, str] = {}
+    for path in sorted(folder_path.iterdir()):
+        if path.is_file() and path.suffix.lower() in {".pdf", ".txt"}:
+            docs[path.name] = extract_text_from_bytes(path.name, path.read_bytes())
     return docs
 
 
-def main(argv=None):
-    import argparse
-    ap = argparse.ArgumentParser(description="LSH vs brute force on a folder of PDF/TXT files.")
-    ap.add_argument("folder", nargs="?", default="Document")
-    ap.add_argument("--mode", choices=SHINGLE_MODES, default=DEFAULT_MODE)
-    ap.add_argument("--k", type=int, default=None)
-    ap.add_argument("--threshold", type=float, default=0.8, help="0-1 (default 0.8)")
-    ap.add_argument("--bands", type=int, default=20)
-    ap.add_argument("--hashes", type=int, default=NUM_HASHES)
-    ap.add_argument("--minhash", choices=MINHASH_METHODS, default="fast")
-    ap.add_argument("--seed", type=int, default=42)
-    args = ap.parse_args(argv)
+# ---------------------------------------------------------------------------
+# Interactive Query Search Engine
+# ---------------------------------------------------------------------------
 
-    res = run_analysis(load_folder(args.folder), args.threshold, args.bands, args.mode,
-                       args.k, args.hashes, args.minhash, args.seed)
+@dataclass
+class SearchResult:
+    doc_id: str
+    score: float
+    exact_jaccard: float
+    estimated_similarity: float
+    snippet: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "doc_id": self.doc_id,
+            "score": round(self.score, 4),
+            "exact_jaccard": round(self.exact_jaccard, 4),
+            "estimated_similarity": round(self.estimated_similarity, 4),
+            "snippet": self.snippet,
+        }
+
+
+@dataclass
+class PerformanceMetrics:
+    num_documents: int = 0
+    num_hashes: int = NUM_HASHES_DEFAULT
+    num_bands: int = 20
+    rows_per_band: int = 5
+    index_time_ms: float = 0.0
+    last_query_lsh_time_ms: float = 0.0
+    last_query_linear_time_ms: float = 0.0
+    last_candidate_count: int = 0
+    speedup_factor: float = 1.0
+    precision_at_k: float = 1.0
+    recall_at_k: float = 1.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "num_documents": self.num_documents,
+            "num_hashes": self.num_hashes,
+            "num_bands": self.num_bands,
+            "rows_per_band": self.rows_per_band,
+            "index_time_ms": round(self.index_time_ms, 3),
+            "last_query_lsh_time_ms": round(self.last_query_lsh_time_ms, 3),
+            "last_query_linear_time_ms": round(self.last_query_linear_time_ms, 3),
+            "last_candidate_count": self.last_candidate_count,
+            "speedup_factor": round(self.speedup_factor, 2),
+            "precision_at_k": round(self.precision_at_k, 4),
+            "recall_at_k": round(self.recall_at_k, 4),
+        }
+
+
+class LSHEngine:
+    """Real-time LSH query engine for indexing and querying text documents."""
+
+    def __init__(
+        self,
+        num_hashes: int = 100,
+        num_bands: int = 20,
+        shingle_size: int = 2,
+        shingle_mode: str = "word",
+        seed: int = 42,
+    ) -> None:
+        if num_hashes <= 0 or num_bands <= 0 or num_hashes % num_bands != 0:
+            raise ValueError("num_hashes must be positive and divisible by num_bands.")
+        self.num_hashes = num_hashes
+        self.num_bands = num_bands
+        self.rows_per_band = num_hashes // num_bands
+        self.shingle_size = shingle_size
+        self.shingle_mode = shingle_mode
+        self.seed = seed
+
+        # Pre-cache Carter-Wegman hash parameters for fast repeated querying
+        self.hash_params = make_hash_params(self.num_hashes, self.seed)
+
+        self.documents: Dict[str, str] = {}
+        self.shingle_sets: Dict[str, Set[str]] = {}
+        self.signatures: Dict[str, List[int]] = {}
+        self.buckets: List[Dict[Tuple[int, ...], Set[str]]] = [
+            {} for _ in range(self.num_bands)
+        ]
+        self.metrics = PerformanceMetrics(
+            num_hashes=self.num_hashes,
+            num_bands=self.num_bands,
+            rows_per_band=self.rows_per_band,
+        )
+
+    def add_document(self, doc_id: str, text: str) -> None:
+        """Indexes a single document into the LSH bucket structure."""
+        if not doc_id or not isinstance(doc_id, str):
+            raise ValueError("doc_id must be a non-empty string.")
+        t0 = time.perf_counter()
+        shingles = make_shingles(text, self.shingle_mode, self.shingle_size)
+        ids = shingle_ids(shingles, seed=self.seed)
+        sig = (
+            minhash_signatures(
+                [ids],
+                num_hashes=self.num_hashes,
+                method="fast",
+                seed=self.seed,
+                hash_params=self.hash_params,
+            )[0]
+            if len(ids) > 0
+            else [MERSENNE_PRIME] * self.num_hashes
+        )
+        self.documents[doc_id] = text
+        self.shingle_sets[doc_id] = shingles
+        self.signatures[doc_id] = sig
+
+        for b_idx in range(self.num_bands):
+            start = b_idx * self.rows_per_band
+            key = tuple(sig[start : start + self.rows_per_band])
+            self.buckets[b_idx].setdefault(key, set()).add(doc_id)
+
+        self.metrics.num_documents = len(self.documents)
+        self.metrics.index_time_ms += (time.perf_counter() - t0) * 1000.0
+
+    def query(
+        self, query_text: str, top_k: int = 5, threshold: float = 0.0
+    ) -> List[SearchResult]:
+        """
+        Executes an LSH query with strict candidate collision filtering.
+        Computes real Precision@K and Recall@K against the ground-truth linear baseline.
+        """
+        q_shingles = make_shingles(query_text, self.shingle_mode, self.shingle_size)
+        if not q_shingles or top_k <= 0 or not self.documents:
+            self.metrics.last_candidate_count = 0
+            self.metrics.last_query_lsh_time_ms = 0.0
+            self.metrics.last_query_linear_time_ms = 0.0
+            self.metrics.speedup_factor = 1.0
+            self.metrics.precision_at_k = 1.0
+            self.metrics.recall_at_k = 1.0
+            return []
+
+        t0 = time.perf_counter()
+        q_ids = shingle_ids(q_shingles, seed=self.seed)
+        q_sig = minhash_signatures(
+            [q_ids],
+            num_hashes=self.num_hashes,
+            method="fast",
+            seed=self.seed,
+            hash_params=self.hash_params,
+        )[0]
+
+        candidates: Set[str] = set()
+        for b_idx in range(self.num_bands):
+            start = b_idx * self.rows_per_band
+            key = tuple(q_sig[start : start + self.rows_per_band])
+            candidates.update(self.buckets[b_idx].get(key, set()))
+
+        self.metrics.last_candidate_count = len(candidates)
+        pool = candidates if candidates else set(self.documents.keys())
+
+        results: List[SearchResult] = []
+        for doc_id in pool:
+            exact = jaccard(q_shingles, self.shingle_sets[doc_id])
+            est = estimate_jaccard(q_sig, self.signatures[doc_id])
+            if exact >= threshold:
+                results.append(
+                    SearchResult(
+                        doc_id=doc_id,
+                        score=exact,
+                        exact_jaccard=exact,
+                        estimated_similarity=est,
+                        snippet=self.documents[doc_id][:180].strip(),
+                    )
+                )
+        results.sort(key=lambda r: (r.score, r.estimated_similarity), reverse=True)
+        top_results = results[:top_k]
+
+        lsh_ms = (time.perf_counter() - t0) * 1000.0
+
+        # Ground-truth linear scan across all documents for baseline & accuracy benchmarking
+        t1 = time.perf_counter()
+        linear_all: List[Tuple[str, float]] = []
+        for doc_id, s_set in self.shingle_sets.items():
+            exact_val = jaccard(q_shingles, s_set)
+            if exact_val >= threshold:
+                linear_all.append((doc_id, exact_val))
+        linear_all.sort(key=lambda item: item[1], reverse=True)
+        linear_top = linear_all[:top_k]
+        linear_ms = (time.perf_counter() - t1) * 1000.0
+
+        # Precision@K & Recall@K computation
+        lsh_top_ids = {r.doc_id for r in top_results}
+        linear_top_ids = {item[0] for item in linear_top}
+
+        if linear_top_ids:
+            tp = len(lsh_top_ids & linear_top_ids)
+            recall = round(tp / len(linear_top_ids), 4)
+            precision = round(tp / len(lsh_top_ids), 4) if lsh_top_ids else 0.0
+        else:
+            recall = 1.0 if not lsh_top_ids else 0.0
+            precision = 1.0 if not lsh_top_ids else 0.0
+
+        self.metrics.last_query_lsh_time_ms = lsh_ms
+        self.metrics.last_query_linear_time_ms = linear_ms
+        self.metrics.speedup_factor = linear_ms / max(lsh_ms, 1e-6)
+        self.metrics.precision_at_k = precision
+        self.metrics.recall_at_k = recall
+
+        return top_results
+
+    def get_performance_metrics(self) -> Dict[str, Any]:
+        """Returns performance metrics snapshot."""
+        return self.metrics.to_dict()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Run LSH + brute-force similarity analysis on a folder."
+    )
+    parser.add_argument("folder", type=str, help="Path to document folder")
+    parser.add_argument(
+        "--threshold", type=float, default=0.8, help="Similarity threshold in 0..1"
+    )
+    parser.add_argument("--bands", type=int, default=20, choices=VALID_BANDS)
+    parser.add_argument("--mode", type=str, default="word", choices=("word", "char"))
+    parser.add_argument("--k", type=int, default=3)
+    parser.add_argument("--minhash", type=str, default="fast", choices=MINHASH_METHODS)
+    args = parser.parse_args()
+
+    docs = load_folder(args.folder)
+    res = run_analysis(
+        docs,
+        threshold=args.threshold,
+        bands=args.bands,
+        shingle_mode=args.mode,
+        shingle_size=args.k,
+        minhash_method=args.minhash,
+        source_label=str(args.folder),
+    )
     m = res["metrics"]
-    print(f"{m['document_count']} documents | {m['shingle_size']}-{m['shingle_unit'][:-1]} shingles | "
-          f"{m['num_hashes']} hashes ({m['minhash_method']}) | b={m['bands']} r={m['rows_per_band']} "
-          f"| threshold {m['threshold']}%")
-    for w in res["warnings"]:
-        print("  note:", w)
-    print("\nNear duplicates found by LSH:")
-    for r in res["pairs"]:
-        print(f"  {r['doc_a']:<16} {r['doc_b']:<16} {r['similarity']:6.2f}%  bands={r['shared_buckets']}")
-    print("\nBrute-force pairs missed by LSH:",
-          [(p["doc_a"], p["doc_b"]) for p in res["brute_force"]["pairs"] if not p["found_by_lsh"]] or "none")
-    print(f"\n{'':<26}{'LSH':>12}{'Brute force':>14}")
-    print(f"{'exact comparisons':<26}{m['lsh_comparisons']:>12}{m['brute_comparisons']:>14}")
-    print(f"{'time (ms)':<26}{m['lsh_ms']:>12.3f}{m['brute_ms']:>14.3f}")
-    print(f"  hashing {m['hashing_ms']} ms, MinHash {m['minhash_ms']} ms, banding {m['banding_ms']} ms, "
-          f"verify {m['verify_ms']} ms; shared cleaning + shingling {m['preprocessing_ms']} ms")
-    na = lambda v: "n/a" if v is None else v
-    print(f"recall {na(m['recall'])}  precision {na(m['precision'])}  F1 {na(m['f1'])}  "
-          f"candidate precision {na(m['candidate_precision'])}  "
-          f"speedup {m['speedup']}x  candidate reduction {m['candidate_reduction']}%")
+    print(
+        f"Documents: {m['document_count']} | Candidates: {m['candidate_count']} | Matches: {m['found_pairs']}"
+    )
+    print(
+        f"LSH: {m['lsh_ms']} ms | Brute Force: {m['brute_ms']} ms | Recall: {m['recall']} | Speedup: {m['speedup']}x"
+    )
+    for pair in res["pairs"]:
+        print(f"  {pair['doc_a']} <-> {pair['doc_b']}: {pair['similarity_text']}%")
 
 
 if __name__ == "__main__":

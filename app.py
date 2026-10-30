@@ -1,271 +1,389 @@
-"""Flask UI: LSH vs brute-force near-duplicate search, using Algorithm/lsh_engine.py."""
+"""
+Flask Application for Resemble Similarity Search System
+=======================================================
+Web controller and REST API interfaces.
+Coordinates the LSH query and collection engines with the SHA-256 bucketing service.
+"""
 
-from pathlib import Path
-from time import perf_counter
-from uuid import uuid4
+from __future__ import annotations
+
 import os
 import re
 import sys
+import time
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-from flask import Flask, flash, redirect, render_template, request, session, url_for
-from werkzeug.utils import secure_filename
+from flask import Flask, jsonify, render_template, request
 
-BASE_DIR = Path(__file__).resolve().parent
-ALGORITHM_DIR = BASE_DIR / "Algorithm"
-DOCUMENT_DIR = BASE_DIR / "Document"
-sys.path.insert(0, str(ALGORITHM_DIR))
+# Ensure local packages (Algorithm, services, tools) are importable
+ROOT_DIR: Path = Path(__file__).resolve().parent
+for sub in ("", "Algorithm", "services", "tools"):
+    sub_path = str(ROOT_DIR / sub)
+    if sub_path not in sys.path:
+        sys.path.insert(0, sub_path)
 
-import lsh_engine as engine  # noqa: E402  (the one algorithm file)
+from Algorithm.lsh_engine import (
+    LSHEngine,
+    MINHASH_METHODS,
+    NUM_HASHES_DEFAULT,
+    VALID_BANDS,
+    SearchResult,
+    extract_text_from_bytes,
+    load_folder,
+    run_analysis,
+)
+from services.bucketing import (
+    HASH_TRUNCATE_LEN,
+    MOCK_RECORDS,
+    NUM_BUCKETS,
+    build_bucketed_dataset,
+    compute_sha256_bucket,
+)
 
-app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "local-development-key-change-me")
-app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB per request
-app.config["MAX_PDF_COUNT"] = 30
+SAMPLE_FOLDER: Path = ROOT_DIR / "Document"
+ALLOWED_EXTENSIONS: Set[str] = {".pdf", ".txt"}
 
-# Local-development cache: only a short analysis ID is kept in the browser session.
-# Results disappear if the Flask process restarts; this avoids putting large result
-# objects into the session cookie or saving uploaded PDFs to disk.
-ANALYSIS_CACHE = {}
-MAX_CACHED_ANALYSES = 10
-NUM_HASHES = engine.NUM_HASHES
-ALLOWED_BANDS = {10, 20, 25, 50, 100}
-ALLOWED_SUFFIXES = {".pdf", ".txt"}
+DEFAULT_CORPUS: Dict[str, str] = {
+    "CV_2014_Simonyan_VGG": (
+        "Very deep convolutional networks for large-scale image recognition using "
+        "small 3x3 convolution filters and deep architecture layers."
+    ),
+    "CV_2015_He_ResNet": (
+        "Deep residual learning for image recognition introducing skip connections "
+        "and residual blocks to train very deep convolutional neural networks."
+    ),
+    "CV_2020_Dosovitskiy_ViT": (
+        "An image is worth 16x16 words: transformers for image recognition at scale "
+        "applying self-attention directly to sequences of image patches."
+    ),
+    "GRAPH_2016_Kipf_GCN": (
+        "Semi-supervised classification with graph convolutional networks scaling "
+        "spectral graph convolutions linearly in the number of graph edges."
+    ),
+    "GRAPH_2017_Hamilton_GraphSAGE": (
+        "Inductive representation learning on large graphs generating low-dimensional "
+        "node embeddings by sampling and aggregating features from local neighborhoods."
+    ),
+}
 
 
-def _unique_display_name(filename, used_names):
-    """Keep uploaded file labels unique if two files share the same filename."""
-    # PATCH 9: secure_filename() deletes every non-English letter ("日本.txt" -> "txt").
-    # Uploads are only read in memory, never saved, so only folder parts and
-    # characters that are unsafe to display are removed.
-    base = Path(filename.replace("\\", "/")).name
-    safe_name = re.sub(r'[\x00-\x1f<>:"/\\|?*]', "_", base).strip(" .") or "document.pdf"
-    stem, suffix = Path(safe_name).stem, Path(safe_name).suffix or ".pdf"
-    candidate = f"{stem}{suffix}"
+# ===========================================================================
+# Validation & Sanitization Helpers
+# ===========================================================================
+
+def _unique_display_name(raw_name: str, used: Set[str]) -> str:
+    """Preserves Unicode filenames, strips path traversal sequences, and deduplicates."""
+    base = re.split(r"[\\/]", str(raw_name or "document.txt"))[-1]
+    cleaned = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", base).strip(". ")
+    if not cleaned:
+        cleaned = "document.txt"
+
+    if cleaned not in used:
+        used.add(cleaned)
+        return cleaned
+
+    stem, ext = os.path.splitext(cleaned)
     counter = 2
-    while candidate in used_names:
-        candidate = f"{stem}_{counter}{suffix}"
+    while f"{stem}_{counter}{ext}" in used:
         counter += 1
-    used_names.add(candidate)
-    return candidate
+    unique_name = f"{stem}_{counter}{ext}"
+    used.add(unique_name)
+    return unique_name
 
 
-def _extract_pdf(file_stream):
-    """Extract selectable text from a PDF stream."""
-    from pypdf import PdfReader
+def validate_search_params(
+    params: Dict[str, Any],
+) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """Validates threshold, bands, shingle_mode, shingle_size, and minhash_method."""
+    raw_thresh = params.get("threshold", 80)
+    try:
+        thresh_val = float(raw_thresh)
+    except (TypeError, ValueError):
+        return None, "Threshold must be a valid number between 0 and 100."
 
-    reader = PdfReader(file_stream)
-    page_texts = []
-    for page in reader.pages:
-        text = page.extract_text()
-        if text:
-            page_texts.append(text)
-    return "\n".join(page_texts)
-
-
-def _read_uploaded_documents(files):
-    documents = {}
-    warnings = []
-    used_names = set()
-
-    if len(files) > app.config["MAX_PDF_COUNT"]:
-        raise ValueError(
-            f"Please upload no more than {app.config['MAX_PDF_COUNT']} files at once."
-        )
-
-    for uploaded_file in files:
-        if not uploaded_file or not uploaded_file.filename:
-            continue
-        suffix = Path(uploaded_file.filename).suffix.lower()
-        if suffix not in ALLOWED_SUFFIXES:
-            warnings.append(f"{uploaded_file.filename}: skipped (only .pdf and .txt are supported).")
-            continue
-
-        display_name = _unique_display_name(uploaded_file.filename, used_names)
-        try:
-            uploaded_file.stream.seek(0)
-            if suffix == ".txt":
-                raw_text = uploaded_file.stream.read().decode("utf-8", errors="ignore")
-            else:
-                raw_text = _extract_pdf(uploaded_file.stream)
-            if raw_text.strip():
-                documents[display_name] = raw_text
-            else:
-                warnings.append(
-                    f"{display_name}: no text found (scanned PDFs need OCR)."
-                )
-        except Exception as exc:
-            warnings.append(f"{display_name}: could not read this PDF ({exc}).")
-
-    return documents, warnings
-
-
-def _read_sample_documents():
-    """Load PDFs included in the project's Document folder."""
-    from pypdf import PdfReader
-
-    documents = {}
-    warnings = []
-    pdf_paths = sorted(DOCUMENT_DIR.glob("*.pdf"))
-
-    if not pdf_paths:
-        raise ValueError(
-            "No sample PDFs were found in the Document folder. Upload files instead."
-        )
-
-    for path in pdf_paths:
-        try:
-            reader = PdfReader(path)
-            page_texts = []
-            for page in reader.pages:
-                text = page.extract_text()
-                if text:
-                    page_texts.append(text)
-            raw_text = "\n".join(page_texts)
-            if raw_text.strip():
-                documents[path.name] = raw_text
-            else:
-                warnings.append(
-                    f"{path.name}: no selectable text found; scanned PDFs need OCR."
-                )
-        except Exception as exc:
-            warnings.append(f"{path.name}: could not read this PDF ({exc}).")
-
-    return documents, warnings
-
-
-def _run_lsh_analysis(raw_documents, threshold_percent, bands, warnings, source_label,
-                      shingle_mode=engine.DEFAULT_MODE, shingle_size=None,
-                      minhash_method="fast", extraction_ms=0.0):
-    """Run LSH and the brute-force baseline on the SAME shingle sets (lsh_engine)."""
-    result = engine.run_analysis(
-        raw_documents,
-        threshold=threshold_percent / 100.0,
-        bands=bands,
-        shingle_mode=shingle_mode,
-        k=shingle_size,
-        num_hashes=NUM_HASHES,
-        minhash_method=minhash_method,
-        run_brute_force=True,
-        timing_repeats=3 if minhash_method == "fast" else 1,   # PATCH 4
+    if thresh_val < 0 or thresh_val > 100:
+        return None, "Threshold must be between 0 and 100%."
+    threshold = (
+        thresh_val / 100.0
+        if thresh_val > 1.0 or str(raw_thresh).strip() in {"1", "100"}
+        else thresh_val
     )
-    result["warnings"] = list(warnings) + result["warnings"]
-    result["metrics"]["extraction_ms"] = round(extraction_ms, 2)
-    result["analysis_id"] = uuid4().hex
-    result["source_label"] = source_label
-    return result
+
+    try:
+        bands = int(params.get("bands", 20))
+        if str(params.get("bands", 20)).strip() != str(bands):
+            raise ValueError
+    except (TypeError, ValueError):
+        return None, f"Bands must be an integer in {VALID_BANDS}."
+    if bands not in VALID_BANDS:
+        return None, f"Invalid band count ({bands}). Choose from {VALID_BANDS}."
+
+    mode = str(params.get("shingle_mode") or params.get("mode") or "word").strip().lower()
+    if mode not in ("word", "char"):
+        return None, "Shingle mode must be 'word' or 'char'."
+
+    default_k = 3 if mode == "word" else 9
+    raw_k = params.get("shingle_size", params.get("k", default_k))
+    try:
+        k = int(raw_k)
+        if str(raw_k).strip() != str(k):
+            raise ValueError
+    except (TypeError, ValueError):
+        if mode == "char":
+            return None, "Shingle size for char shingles must be 1-30 characters."
+        return None, "Shingle size for word shingles must be 1-20 words."
+
+    if mode == "char" and not (1 <= k <= 30):
+        return None, "Shingle size for char shingles must be 1-30 characters."
+    if mode == "word" and not (1 <= k <= 20):
+        return None, "Shingle size for word shingles must be 1-20 words."
+
+    minhash_method = str(params.get("minhash_method", "fast")).strip().lower()
+    if minhash_method not in MINHASH_METHODS:
+        return None, f"MinHash method must be one of {MINHASH_METHODS}."
+
+    return {
+        "threshold": threshold,
+        "bands": bands,
+        "shingle_mode": mode,
+        "shingle_size": k,
+        "minhash_method": minhash_method,
+    }, None
 
 
-def _store_analysis(result):
-    ANALYSIS_CACHE[result["analysis_id"]] = result
-    while len(ANALYSIS_CACHE) > MAX_CACHED_ANALYSES:
-        oldest_key = next(iter(ANALYSIS_CACHE))
-        if oldest_key == result["analysis_id"] and len(ANALYSIS_CACHE) > 1:
-            oldest_key = next(key for key in ANALYSIS_CACHE if key != result["analysis_id"])
-        ANALYSIS_CACHE.pop(oldest_key, None)
-    session["analysis_id"] = result["analysis_id"]
+# ===========================================================================
+# Flask Application Factory
+# ===========================================================================
 
+def create_app(engine: Optional[LSHEngine] = None) -> Flask:
+    app = Flask(__name__)
 
-def _current_analysis():
-    analysis_id = session.get("analysis_id")
-    return ANALYSIS_CACHE.get(analysis_id)
+    if engine is None:
+        engine = LSHEngine(num_hashes=100, num_bands=20, shingle_size=2)
+        for doc_id, text in DEFAULT_CORPUS.items():
+            engine.add_document(doc_id, text)
 
+    app.config["LSH_ENGINE"] = engine
+    app.config["LAST_ANALYSIS"] = None
+    app.config["MOCK_RECORDS"] = list(MOCK_RECORDS)
 
-@app.route("/", methods=["GET", "POST"])
-def index():
-    if request.method == "POST":
+    def _template_context(**extra: Any) -> Dict[str, Any]:
+        current_engine: LSHEngine = app.config["LSH_ENGINE"]
+        bucket_data = build_bucketed_dataset(
+            app.config["MOCK_RECORDS"], num_buckets=NUM_BUCKETS
+        )
+        ctx: Dict[str, Any] = {
+            "metrics": current_engine.get_performance_metrics(),
+            "analysis": app.config.get("LAST_ANALYSIS"),
+            "error": None,
+            "results": [],
+            "query": "",
+            "active_tab": "all",
+            "records": bucket_data["records"],
+            "buckets": bucket_data["buckets"],
+            "bucket_summaries": bucket_data["bucket_summaries"],
+            "total_records": bucket_data["total_records"],
+            "total_value": bucket_data["total_value"],
+            "average_value": bucket_data["average_value"],
+            "num_buckets": bucket_data["num_buckets"],
+        }
+        ctx.update(extra)
+        return ctx
+
+    def _execute_analysis_from_request() -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+        form_data = (
+            request.form.to_dict()
+            if request.form
+            else (request.get_json(silent=True) or {})
+        )
+        validated, err = validate_search_params(form_data)
+        if err or validated is None:
+            return None, err
+
+        source = str(form_data.get("source", "sample")).strip().lower()
+        t0 = time.perf_counter()
+        docs: Dict[str, str] = {}
+
+        if source == "upload":
+            uploaded_files = [
+                f for f in request.files.getlist("documents") if f and f.filename
+            ]
+            if not uploaded_files:
+                return None, "Please choose at least one PDF or TXT file to upload."
+
+            used_names: Set[str] = set()
+            for storage in uploaded_files:
+                ext = Path(storage.filename or "").suffix.lower()
+                if ext not in ALLOWED_EXTENSIONS:
+                    return (
+                        None,
+                        f"Unsupported file '{storage.filename}'. Allowed: {ALLOWED_EXTENSIONS}",
+                    )
+                disp_name = _unique_display_name(
+                    storage.filename or "document.txt", used_names
+                )
+                raw_bytes = storage.read()
+                docs[disp_name] = extract_text_from_bytes(disp_name, raw_bytes)
+            source_label = f"{len(docs)} uploaded file(s)"
+        else:
+            if not SAMPLE_FOLDER.is_dir():
+                return None, "Bundled sample Document/ folder was not found."
+            docs = load_folder(SAMPLE_FOLDER)
+            source_label = "Bundled sample PDFs (Document/)"
+
+        extraction_ms = (time.perf_counter() - t0) * 1000.0
         try:
-            try:
-                threshold = int(request.form.get("threshold", "80"))
-                bands = int(request.form.get("bands", "20"))
-                shingle_mode = request.form.get("shingle_mode", engine.DEFAULT_MODE)
-                shingle_size = int(request.form.get(
-                    "shingle_size", engine.DEFAULT_K.get(shingle_mode, 3)))
-            except ValueError:
-                raise ValueError("Threshold, bands and shingle size must be whole numbers.")
-            minhash_method = request.form.get("minhash_method", "fast")
-            if not 0 <= threshold <= 100:
-                raise ValueError("Similarity threshold must be between 0% and 100%.")
-            if bands not in ALLOWED_BANDS:
-                raise ValueError("Choose one of the available band settings.")
-            if NUM_HASHES % bands != 0:
-                raise ValueError("The number of MinHash values must divide evenly into bands.")
-            if minhash_method not in engine.MINHASH_METHODS:
-                raise ValueError("Choose a valid MinHash method.")
-            engine.validate_shingle_settings(shingle_mode, shingle_size)
-
-            extraction_started = perf_counter()
-
-            source = request.form.get("source", "upload")
-            if source == "samples":
-                raw_documents, warnings = _read_sample_documents()
-                source_label = "Files in the Document folder"
-            else:
-                files = [f for f in request.files.getlist("documents") if f and f.filename]
-                if not files:
-                    raise ValueError("Please choose at least one PDF or TXT file to upload.")
-                raw_documents, warnings = _read_uploaded_documents(files)
-                source_label = "Uploaded files"
-
-            if not raw_documents:
-                detail = " ".join(warnings[:3])
-                raise ValueError(
-                    "No readable text was found. Upload selectable-text PDFs or TXT files. "
-                    + detail
-                )
-
-            extraction_ms = (perf_counter() - extraction_started) * 1000
-
-            result = _run_lsh_analysis(
-                raw_documents=raw_documents,
-                threshold_percent=threshold,
-                bands=bands,
-                warnings=warnings,
-                source_label=source_label,
-                shingle_mode=shingle_mode,
-                shingle_size=shingle_size,
-                minhash_method=minhash_method,
+            analysis = run_analysis(
+                docs,
+                threshold=validated["threshold"],
+                bands=validated["bands"],
+                shingle_mode=validated["shingle_mode"],
+                shingle_size=validated["shingle_size"],
+                minhash_method=validated["minhash_method"],
                 extraction_ms=extraction_ms,
+                source_label=source_label,
+                timing_repeats=3,
             )
-            _store_analysis(result)
-            return redirect(url_for("results"))
+        except ValueError as exc:
+            return None, str(exc)
 
-        except (ValueError, ModuleNotFoundError) as exc:
-            if isinstance(exc, ModuleNotFoundError):
-                flash(
-                    "A required package is missing. Run: python -m pip install -r requirements.txt",
-                    "error",
-                )
-            else:
-                flash(str(exc), "error")
-            return redirect(url_for("index"))
-        except Exception as exc:
-            app.logger.exception("Document analysis failed")
-            flash(
-                f"Analysis failed: {exc}. Check the terminal for the detailed error.",
-                "error",
+        app.config["LAST_ANALYSIS"] = analysis
+        return analysis, None
+
+    # -----------------------------------------------------------------------
+    # Routes
+    # -----------------------------------------------------------------------
+
+    @app.route("/", methods=["GET", "POST"])
+    def index() -> Any:
+        if request.method == "POST":
+            analysis, err = _execute_analysis_from_request()
+            if (
+                request.headers.get("X-Requested-With") == "XMLHttpRequest"
+                or request.is_json
+            ):
+                if err:
+                    return jsonify({"error": err}), 400
+                return jsonify({"analysis": analysis}), 200
+
+            return render_template(
+                "index.html",
+                **_template_context(
+                    analysis=analysis,
+                    error=err,
+                    active_tab="results" if analysis else "all",
+                ),
+            ), (400 if err else 200)
+
+        return render_template("index.html", **_template_context())
+
+    @app.route("/results", methods=["GET"])
+    def results() -> Any:
+        return render_template("index.html", **_template_context(active_tab="results"))
+
+    @app.route("/performance", methods=["GET"])
+    def performance() -> Any:
+        current_engine: LSHEngine = app.config["LSH_ENGINE"]
+        if (
+            request.is_json
+            or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+            or request.args.get("format") == "json"
+        ):
+            payload = current_engine.get_performance_metrics()
+            if app.config.get("LAST_ANALYSIS"):
+                payload["analysis_metrics"] = app.config["LAST_ANALYSIS"]["metrics"]
+            return jsonify(payload), 200
+
+        return render_template(
+            "index.html", **_template_context(active_tab="performance")
+        )
+
+    @app.route("/api/buckets", methods=["GET"])
+    def api_buckets() -> Any:
+        dataset = build_bucketed_dataset(
+            app.config["MOCK_RECORDS"], num_buckets=NUM_BUCKETS
+        )
+        return jsonify(dataset), 200
+
+    @app.route("/api/performance", methods=["GET"])
+    def api_performance() -> Any:
+        current_engine: LSHEngine = app.config["LSH_ENGINE"]
+        payload = current_engine.get_performance_metrics()
+        if app.config.get("LAST_ANALYSIS"):
+            payload["analysis_metrics"] = app.config["LAST_ANALYSIS"]["metrics"]
+        return jsonify(payload), 200
+
+    @app.route("/api/analyze", methods=["POST"])
+    def api_analyze() -> Any:
+        analysis, err = _execute_analysis_from_request()
+        if err:
+            return jsonify({"error": err}), 400
+        return jsonify({"analysis": analysis}), 200
+
+    @app.route("/api/search", methods=["POST", "GET"])
+    @app.route("/search", methods=["POST", "GET"])
+    def search() -> Any:
+        current_engine: LSHEngine = app.config["LSH_ENGINE"]
+
+        if request.is_json:
+            payload = request.get_json(silent=True) or {}
+            query_text = str(payload.get("query", "")).strip()
+            top_k = int(payload.get("top_k", 5))
+            threshold = float(payload.get("threshold", 0.0))
+        else:
+            data = request.form if request.method == "POST" else request.args
+            query_text = str(data.get("query", "")).strip()
+            top_k = int(data.get("top_k", 5))
+            threshold = float(data.get("threshold", 0.0))
+
+        if not query_text:
+            response_data = {
+                "query": "",
+                "results": [],
+                "count": 0,
+                "metrics": current_engine.get_performance_metrics(),
+                "error": "Query string cannot be empty.",
+            }
+            if (
+                request.path.startswith("/api/")
+                or request.is_json
+                or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+            ):
+                return jsonify(response_data), 400
+            return render_template(
+                "index.html", **_template_context(**response_data)
+            ), 400
+
+        hits = [
+            r.to_dict()
+            for r in current_engine.query(
+                query_text=query_text, top_k=top_k, threshold=threshold
             )
-            return redirect(url_for("index"))
+        ]
+        metrics = current_engine.get_performance_metrics()
+        response_data = {
+            "query": query_text,
+            "results": hits,
+            "count": len(hits),
+            "metrics": metrics,
+        }
 
-    return render_template("index.html", default_k=engine.DEFAULT_K, k_limits=engine.K_LIMITS)
+        if (
+            request.path.startswith("/api/")
+            or request.is_json
+            or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        ):
+            return jsonify(response_data), 200
+
+        return render_template(
+            "index.html", **_template_context(**response_data)
+        ), 200
+
+    return app
 
 
-@app.route("/results")
-def results():
-    analysis = _current_analysis()
-    return render_template("results.html", analysis=analysis)
-
-
-@app.route("/performance")
-def performance():
-    analysis = _current_analysis()
-    return render_template("performance.html", analysis=analysis)
-
-
-@app.errorhandler(413)
-def request_too_large(_error):
-    flash("The upload is too large. Please keep the total upload under 50 MB.", "error")
-    return redirect(url_for("index"))
-
+app = create_app()
 
 if __name__ == "__main__":
     app.run(debug=True)
