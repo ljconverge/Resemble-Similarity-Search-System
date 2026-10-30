@@ -1,7 +1,9 @@
 """
 Integration tests for services/bucketing.py and app.py API routes.
-Includes validation for Custom LSH (SHA-256 Modulo 4) vs. Standard LSH (MinHash) comparison.
+Includes validation for Custom LSH (SHA-256 Modulo 4) vs. Standard LSH (MinHash) comparison,
+and AJAX / multipart SPA routing.
 """
+import io
 import pytest
 from app import create_app
 from Algorithm.lsh_engine import custom_sha256_candidates, run_analysis
@@ -218,6 +220,57 @@ def test_api_analyze_sample(client):
     assert analysis["metrics"]["recall"] == 1.0
     assert "custom_recall" in analysis["metrics"]
     assert "custom_lsh" in analysis["comparison"]
+
+
+def test_api_analyze_ajax_file_upload(client):
+    """Verifies that multipart file upload to /api/analyze via AJAX returns JSON."""
+    file1 = (io.BytesIO(b"deep residual learning for image recognition with skip connections"), "resnet.txt")
+    file2 = (io.BytesIO(b"deep residual learning for image recognition with skip connections and residual blocks"), "resnet2.txt")
+    res = client.post(
+        "/api/analyze",
+        data={
+            "source": "upload",
+            "threshold": "80",
+            "bands": "20",
+            "shingle_mode": "word",
+            "shingle_size": "3",
+            "documents": [file1, file2],
+        },
+        headers={"X-Requested-With": "XMLHttpRequest"},
+        content_type="multipart/form-data",
+    )
+    assert res.status_code == 200
+    assert res.is_json
+    data = res.get_json()
+    assert "analysis" in data
+    assert "redirect_url" in data
+    assert data["redirect_url"] == "/detailed-analysis"
+    assert data["analysis"]["metrics"]["document_count"] == 2
+    assert "comparison" in data["analysis"]
+
+
+def test_root_post_ajax_file_upload(client):
+    """Verifies that multipart file upload to / via AJAX returns JSON without navigating away."""
+    file1 = (io.BytesIO(b"transformers for image recognition at scale with patch embeddings"), "vit.txt")
+    file2 = (io.BytesIO(b"transformers for image recognition at scale with multi-head attention"), "vit2.txt")
+    res = client.post(
+        "/",
+        data={
+            "source": "upload",
+            "threshold": "70",
+            "bands": "20",
+            "shingle_mode": "word",
+            "shingle_size": "3",
+            "documents": [file1, file2],
+        },
+        headers={"X-Requested-With": "XMLHttpRequest"},
+        content_type="multipart/form-data",
+    )
+    assert res.status_code == 200
+    assert res.is_json
+    data = res.get_json()
+    assert "analysis" in data
+    assert data["analysis"]["metrics"]["document_count"] == 2
 
 
 def test_api_analyze_invalid_params(client):

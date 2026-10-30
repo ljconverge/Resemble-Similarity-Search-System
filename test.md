@@ -6,7 +6,7 @@ This document catalogs every automated test case in the Resemble Similarity Sear
 
 ## Test Execution Instructions
 
-Run all 77 tests in the workspace:
+Run all 79 tests in the workspace:
 
 ```powershell
 .\venv\Scripts\python.exe -m pytest -v
@@ -23,9 +23,9 @@ Or run individual test modules:
 
 ---
 
-## 1. `tests/test_bucketing_and_api.py` (14 Tests)
+## 1. `tests/test_bucketing_and_api.py` (16 Tests)
 
-This suite validates deterministic SHA-256 modulo bucketing, Custom LSH vs. Standard LSH side-by-side comparison, edge cases (zero matches, identical files), and Flask API routes.
+This suite validates deterministic SHA-256 modulo bucketing, Custom LSH vs. Standard LSH side-by-side comparison, edge cases (zero matches, identical files), and Flask API routes with SPA AJAX file upload interception.
 
 | Test Function | Purpose | Input / Setup | Edge-Case Handled | Expected Output / Assertions |
 | :--- | :--- | :--- | :--- | :--- |
@@ -42,6 +42,8 @@ This suite validates deterministic SHA-256 modulo bucketing, Custom LSH vs. Stan
 | `test_api_search_success` | Tests corpus query search via JSON. | Query `"deep residual learning image recognition"`, `top_k=3`. | Vector search query against corpus. | Status 200; returns non-empty result list; `doc_id` matches ResNet. |
 | `test_api_search_empty_query` | Tests query endpoint rejects empty queries. | Query `""`. | Empty string input. | Status 400; JSON contains `"error"` message. |
 | `test_api_analyze_sample` | Tests full analysis on synthetic sample dataset via API. | Source `"sample"`, 10 sample PDFs, threshold 80%. | Multi-file document collection. | Status 200; document count 10; recall $1.0$; contains `comparison` metrics. |
+| `test_api_analyze_ajax_file_upload` | **SPA Interception Test**: Verifies AJAX multipart upload to `/api/analyze`. | 2 text files via `multipart/form-data`, `X-Requested-With: XMLHttpRequest`. | Multipart form data without manual Content-Type header. | Status 200; JSON response contains `analysis` and `redirect_url`. |
+| `test_root_post_ajax_file_upload` | Verifies root `/` POST handles AJAX multipart uploads gracefully. | 2 text files via `multipart/form-data`, `X-Requested-With: XMLHttpRequest`. | SPA AJAX interception on root route. | Status 200; JSON response with full analysis payload. |
 | `test_api_analyze_invalid_params` | Validates API rejection of out-of-range thresholds. | Threshold `"150"`, bands 20. | Value $> 100\%$. | Status 400; JSON contains validation error message. |
 
 ---
@@ -118,10 +120,10 @@ Validates single-page application structure and interactive REST endpoints.
 ## 5. Test Suite Verification Summary
 
 ```
-============================= 77 passed in 3.70s ==============================
+============================= 79 passed in 3.08s ==============================
 ```
 
-* **Total Test Cases:** 77
-* **Passed:** 77
+* **Total Test Cases:** 79
+* **Passed:** 79
 * **Failed:** 0
-* **Edge Cases Covered:** Empty files, short texts, ligature replacement, non-English scripts, path traversal, $0$-match zero-division, $100\%$ duplicate files, boundary thresholds ($0.0$ and $1.0$), and chunked matrix broadcasting.
+* **Edge Cases Covered:** Empty files, short texts, ligature replacement, non-English scripts, path traversal, $0$-match zero-division, $100\%$ duplicate files, boundary thresholds ($0.0$ and $1.0$), chunked matrix broadcasting, and AJAX SPA multipart uploads.
