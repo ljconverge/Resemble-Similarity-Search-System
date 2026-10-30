@@ -1,8 +1,10 @@
 """
 Integration tests for services/bucketing.py and app.py API routes.
+Includes validation for Custom LSH (SHA-256 Modulo 4) vs. Standard LSH (MinHash) comparison.
 """
 import pytest
 from app import create_app
+from Algorithm.lsh_engine import custom_sha256_candidates, run_analysis
 from services.bucketing import (
     HASH_TRUNCATE_LEN,
     MOCK_RECORDS,
@@ -53,6 +55,83 @@ def test_build_bucketed_dataset_aggregates():
         assert "role" in rec
         assert "category" in rec
         assert 0 <= rec["bucket_id"] < NUM_BUCKETS
+
+
+# ---------------------------------------------------------------------------
+# Custom LSH vs Standard LSH Algorithmic Comparison Tests
+# ---------------------------------------------------------------------------
+
+def test_custom_sha256_candidates_deterministic():
+    docs = {
+        "docA": "deep residual learning for image recognition",
+        "docB": "deep residual learning for image recognition",
+        "docC": "graph convolutional networks for semi supervised node classification",
+    }
+    cands, buckets = custom_sha256_candidates(docs, num_buckets=4)
+    assert len(buckets) == 4
+    # Identical texts must land in the identical bucket and collide as a candidate pair
+    assert ("docA", "docB") in cands
+    with pytest.raises(ValueError):
+        custom_sha256_candidates(docs, num_buckets=0)
+
+
+def test_run_analysis_contains_3way_comparison():
+    docs = {
+        "doc1.txt": "locality sensitive hashing groups similar items into buckets efficiently",
+        "doc2.txt": "locality sensitive hashing groups similar items into buckets accurately",
+        "doc3.txt": "solar system planetary bodies revolve around gravitationally massive stars",
+    }
+    res = run_analysis(docs, threshold=0.5, bands=20, shingle_mode="word", shingle_size=2)
+    assert "comparison" in res
+    assert "custom_lsh" in res
+
+    comp = res["comparison"]
+    assert "brute_force" in comp
+    assert "standard_lsh" in comp
+    assert "custom_lsh" in comp
+
+    # Brute Force baseline checks
+    assert comp["brute_force"]["recall"] == 1.0
+    assert comp["brute_force"]["precision"] == 1.0
+    assert comp["brute_force"]["comparisons"] == 3  # 3 * 2 // 2
+
+    # Standard LSH checks
+    assert comp["standard_lsh"]["recall"] == 1.0
+    assert "execution_ms" in comp["standard_lsh"]
+
+    # Custom LSH checks
+    assert "execution_ms" in comp["custom_lsh"]
+    assert 0.0 <= comp["custom_lsh"]["recall"] <= 1.0
+    assert 0.0 <= comp["custom_lsh"]["precision"] <= 1.0
+
+
+def test_identical_documents_both_algorithms_100_percent():
+    docs = {
+        "copy1.txt": "identical text across multiple files for rigorous similarity verification",
+        "copy2.txt": "identical text across multiple files for rigorous similarity verification",
+    }
+    res = run_analysis(docs, threshold=0.8, bands=20)
+    m = res["metrics"]
+    assert m["recall"] == 1.0
+    assert m["custom_recall"] == 1.0
+    assert m["found_pairs"] == 1
+    assert m["custom_found_pairs"] == 1
+
+
+def test_zero_matches_no_division_by_zero():
+    docs = {
+        "a.txt": "alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima",
+        "b.txt": "mike november oscar papa quebec romeo sierra tango uniform victor whiskey",
+    }
+    res = run_analysis(docs, threshold=0.95, bands=20)
+    m = res["metrics"]
+    # 0 true pairs must yield 1.0 (100%) without division-by-zero or crashing into n/a
+    assert m["true_pairs"] == 0
+    assert m["recall"] == 1.0
+    assert m["precision"] == 1.0
+    assert m["custom_recall"] == 1.0
+    assert m["custom_precision"] == 1.0
+    assert len(res["closest_pairs"]) > 0  # Closest pairs fallback populated
 
 
 # ---------------------------------------------------------------------------
@@ -134,8 +213,11 @@ def test_api_analyze_sample(client):
     analysis = data["analysis"]
     assert "pairs" in analysis
     assert "metrics" in analysis
+    assert "comparison" in analysis
     assert analysis["metrics"]["document_count"] == 10
     assert analysis["metrics"]["recall"] == 1.0
+    assert "custom_recall" in analysis["metrics"]
+    assert "custom_lsh" in analysis["comparison"]
 
 
 def test_api_analyze_invalid_params(client):

@@ -1,14 +1,18 @@
 """
 Algorithm/lsh_engine.py
 ========================
-High-Performance Locality-Sensitive Hashing (LSH) & MinHash Similarity Engine.
+High-Performance Locality-Sensitive Hashing (LSH) & MinHash Similarity Engine
+with Dual Comparison: Standard LSH (MinHash + Banding) vs. Custom LSH (SHA-256 Modulo 4)
+evaluated against an Exact Brute-Force (N²) Baseline.
 
 Includes:
 - Unicode NFKC normalization and punctuation-stripped word/char shingling.
 - Carter-Wegman universal hashing with Mersenne prime p = 2^61 - 1.
 - Chunked NumPy vectorized MinHash signature generation.
-- Banded LSH bucketing, candidate generation, and collision tracking.
+- Banded LSH bucketing, candidate generation, and collision tracking (Standard LSH).
+- Deterministic SHA-256 modulo partitioning across 4 buckets (Custom LSH).
 - Exact Jaccard verification and brute-force evaluation baseline.
+- Side-by-side performance, recall, precision, and pruning benchmarks for both approaches.
 - Interactive query-against-corpus LSHEngine with real Precision@K and Recall@K.
 - Robust multi-backend document loading.
 """
@@ -254,7 +258,7 @@ def estimate_jaccard(sig_a: Sequence[int], sig_b: Sequence[int]) -> float:
 
 
 # ---------------------------------------------------------------------------
-# LSH Banding & Candidate Generation
+# Standard LSH Banding & Candidate Generation
 # ---------------------------------------------------------------------------
 
 def generate_candidates(
@@ -324,6 +328,47 @@ def approx_threshold(bands: int, rows: int) -> float:
 
 
 # ---------------------------------------------------------------------------
+# Custom LSH: Deterministic SHA-256 Modulo Partitioning (Option A)
+# ---------------------------------------------------------------------------
+
+def custom_sha256_candidates(
+    documents: Dict[str, str],
+    num_buckets: int = 4,
+) -> Tuple[Set[Tuple[str, str]], Dict[int, List[str]]]:
+    """
+    Partitions documents into deterministic SHA-256 modulo buckets and derives candidate pairs.
+    Documents falling into the exact same bucket index form candidate pairs.
+
+    Parameters:
+        documents: Mapping of doc_id to document text (preprocessed or raw).
+        num_buckets: Positive integer modulus (default: 4).
+
+    Returns:
+        Tuple of (candidates_set, buckets_dictionary mapping bucket_id to list of doc_ids).
+    """
+    if isinstance(num_buckets, bool) or not isinstance(num_buckets, int) or num_buckets <= 0:
+        raise ValueError("num_buckets must be a positive integer.")
+
+    buckets: Dict[int, List[str]] = {b: [] for b in range(num_buckets)}
+    for doc_id, text in sorted(documents.items()):
+        raw = text.encode("utf-8")
+        hash_hex = hashlib.sha256(raw).hexdigest()
+        hash_int = int(hash_hex, 16)
+        bucket_id = hash_int % num_buckets
+        buckets[bucket_id].append(doc_id)
+
+    candidates: Set[Tuple[str, str]] = set()
+    for doc_list in buckets.values():
+        if len(doc_list) > 1:
+            ordered = sorted(doc_list)
+            for i in range(len(ordered)):
+                for j in range(i + 1, len(ordered)):
+                    candidates.add((ordered[i], ordered[j]))
+
+    return candidates, buckets
+
+
+# ---------------------------------------------------------------------------
 # Brute Force & Verification
 # ---------------------------------------------------------------------------
 
@@ -357,7 +402,7 @@ def _norm_pair(item: Any) -> Tuple[str, str]:
 
 
 def evaluate(found_pairs: Iterable[Any], true_pairs: Iterable[Any]) -> Dict[str, Any]:
-    """Computes recall, precision, F1, false negatives, and false positives."""
+    """Computes recall, precision, F1, false negatives, and false positives without zero-division."""
     found_set = {_norm_pair(p) for p in found_pairs}
     true_set = {_norm_pair(p) for p in true_pairs}
 
@@ -405,7 +450,7 @@ def _pct_text(score: float, threshold: float) -> str:
 
 
 # ---------------------------------------------------------------------------
-# End-to-End Pairwise Collection Analysis
+# End-to-End Pairwise Collection Analysis (With Dual Comparison)
 # ---------------------------------------------------------------------------
 
 def run_analysis(
@@ -420,8 +465,12 @@ def run_analysis(
     extraction_ms: float = 0.0,
     source_label: str = "Uploaded documents",
     timing_repeats: int = 1,
+    custom_buckets: int = 4,
 ) -> Dict[str, Any]:
-    """Runs preprocessing, LSH, and brute-force evaluation with stage timings."""
+    """
+    Runs document preprocessing, Standard LSH (MinHash + Banding), Custom LSH (SHA-256 Modulo 4),
+    and exact Brute-Force baseline evaluation with stage timings and empirical metrics.
+    """
     if (
         isinstance(threshold, bool)
         or not isinstance(threshold, (int, float))
@@ -451,6 +500,7 @@ def run_analysis(
     warnings: List[str] = []
     doc_summaries: List[Dict[str, Any]] = []
     shingle_sets: Dict[str, Set[str]] = {}
+    cleaned_docs: Dict[str, str] = {}
 
     for name in sorted(documents.keys()):
         raw_text = documents[name]
@@ -460,6 +510,7 @@ def run_analysis(
             warnings.append(f"Skipped '{name}': no usable text after cleaning.")
             continue
         shingle_sets[name] = shingles
+        cleaned_docs[name] = cleaned
         word_count = len(cleaned.split(" ")) if cleaned else 0
         doc_summaries.append(
             {
@@ -476,11 +527,13 @@ def run_analysis(
     preprocessing_ms = (time.perf_counter() - t_prep0) * 1000.0
     doc_names = [d["name"] for d in doc_summaries]
 
+    # Timing accumulators for repeated benchmarking
     hashing_times: List[float] = []
     minhash_times: List[float] = []
     banding_times: List[float] = []
     verify_times: List[float] = []
     brute_times: List[float] = []
+    custom_times: List[float] = []
 
     candidates: Set[Tuple[str, str]] = set()
     buckets: Dict[Tuple[int, Tuple[int, ...]], List[str]] = {}
@@ -489,11 +542,18 @@ def run_analysis(
     brute_matches: List[Tuple[str, str, float]] = []
     brute_comparisons: int = 0
 
+    # Custom LSH state
+    custom_cands: Set[Tuple[str, str]] = set()
+    custom_bucket_map: Dict[int, List[str]] = {}
+    custom_verified_pairs: List[Dict[str, Any]] = []
+    custom_rejected_pairs: List[Dict[str, Any]] = []
+
     cached_hash_params = (
         make_hash_params(num_hashes, seed) if minhash_method == "fast" else None
     )
 
     for _ in range(timing_repeats):
+        # 1. Standard LSH Timing
         t0 = time.perf_counter()
         id_arrays = [shingle_ids(shingle_sets[name], seed=42) for name in doc_names]
         t_hash = (time.perf_counter() - t0) * 1000.0
@@ -541,28 +601,63 @@ def run_analysis(
         cur_rejected.sort(key=lambda r: (-r["similarity_raw"], r["doc_a"], r["doc_b"]))
         t_ver = (time.perf_counter() - t3) * 1000.0
 
+        # 2. Brute-Force Baseline Timing
         t_bf0 = time.perf_counter()
         brute_matches, brute_comparisons = brute_force_all_pairs(
             shingle_sets, threshold=threshold
         )
         t_bf = (time.perf_counter() - t_bf0) * 1000.0
 
+        # 3. Custom LSH (SHA-256 Modulo 4) Timing
+        t_c0 = time.perf_counter()
+        custom_cands, custom_bucket_map = custom_sha256_candidates(
+            cleaned_docs, num_buckets=custom_buckets
+        )
+        cur_custom_verified: List[Dict[str, Any]] = []
+        cur_custom_rejected: List[Dict[str, Any]] = []
+        for doc_a, doc_b in sorted(custom_cands):
+            score = jaccard(shingle_sets[doc_a], shingle_sets[doc_b])
+            row = {
+                "doc_a": doc_a,
+                "doc_b": doc_b,
+                "similarity": round(score * 100.0, 2),
+                "similarity_raw": score,
+                "similarity_text": _pct_text(score, threshold),
+                "is_match": score >= threshold,
+                "status": "Near duplicate" if score >= threshold else "Below threshold",
+            }
+            if score >= threshold:
+                cur_custom_verified.append(row)
+            else:
+                cur_custom_rejected.append(row)
+
+        cur_custom_verified.sort(key=lambda r: (-r["similarity_raw"], r["doc_a"], r["doc_b"]))
+        cur_custom_rejected.sort(key=lambda r: (-r["similarity_raw"], r["doc_a"], r["doc_b"]))
+        t_custom = (time.perf_counter() - t_c0) * 1000.0
+
+        # Record run latencies
         hashing_times.append(max(t_hash, 1e-4))
         minhash_times.append(max(t_mh, 1e-4))
         banding_times.append(max(t_band, 1e-4))
         verify_times.append(max(t_ver, 1e-4))
         brute_times.append(max(t_bf, 1e-4))
+        custom_times.append(max(t_custom, 1e-4))
 
         verified_pairs = cur_verified
         rejected_pairs = cur_rejected
+        custom_verified_pairs = cur_custom_verified
+        custom_rejected_pairs = cur_custom_rejected
 
+    # Median Latencies
     hashing_ms = round(statistics.median(hashing_times), 3) or 0.001
     minhash_ms = round(statistics.median(minhash_times), 3)
     banding_ms = round(statistics.median(banding_times), 3)
     verify_ms = round(statistics.median(verify_times), 3)
     lsh_ms = round(hashing_ms + minhash_ms + banding_ms + verify_ms, 3)
     brute_ms = round(statistics.median(brute_times), 3)
+    custom_lsh_ms = round(statistics.median(custom_times), 3) or 0.001
 
+    # Standard LSH Evaluations
     verified_key_set = {(p["doc_a"], p["doc_b"]) for p in verified_pairs}
     bf_pair_dicts: List[Dict[str, Any]] = []
     for d1, d2, score in brute_matches:
@@ -597,12 +692,28 @@ def run_analysis(
     )
     speedup = round(brute_ms / max(lsh_ms, 1e-6), 2)
 
+    # Custom LSH Evaluations
+    custom_ev = evaluate(
+        [(p["doc_a"], p["doc_b"]) for p in custom_verified_pairs],
+        [(d1, d2) for d1, d2, _ in brute_matches],
+    )
+    custom_cand_count = len(custom_cands)
+    custom_cand_reduction = (
+        round((1.0 - custom_cand_count / possible_pairs) * 100.0, 1) if possible_pairs else 0.0
+    )
+    custom_cand_precision = (
+        1.0
+        if (custom_cand_count == 0 and len(brute_matches) == 0)
+        else (0.0 if custom_cand_count == 0 else round(len(custom_verified_pairs) / custom_cand_count, 4))
+    )
+    custom_speedup = round(brute_ms / max(custom_lsh_ms, 1e-6), 2)
+
+    # Closest pairs fallback (ensures Jaccard similarities never disappear when 0 pairs meet threshold)
     closest_pairs: List[Dict[str, Any]] = []
     max_similarity = 0.0
     if brute_matches:
         max_similarity = brute_matches[0][2]
     else:
-        # When no pairs met threshold, collect top 5 closest pairs across collection
         all_raw_pairs, _ = brute_force_all_pairs(shingle_sets, threshold=0.0)
         if all_raw_pairs:
             max_similarity = all_raw_pairs[0][2]
@@ -624,7 +735,8 @@ def run_analysis(
     if thresh_display == int(thresh_display):
         thresh_display = int(thresh_display)
 
-    metrics = {
+    # Consolidated Metrics Dictionary
+    metrics: Dict[str, Any] = {
         "document_count": n_docs,
         "num_documents": n_docs,
         "num_hashes": num_hashes,
@@ -667,6 +779,57 @@ def run_analysis(
         "lsh_ms": lsh_ms,
         "brute_ms": brute_ms,
         "speedup": speedup,
+        # Custom LSH Metrics
+        "custom_lsh_ms": custom_lsh_ms,
+        "custom_comparisons": custom_cand_count,
+        "custom_candidate_reduction": custom_cand_reduction,
+        "custom_candidate_precision": custom_cand_precision,
+        "custom_found_pairs": len(custom_verified_pairs),
+        "custom_recall": custom_ev["recall"],
+        "custom_precision": custom_ev["precision"],
+        "custom_f1": custom_ev["f1"],
+        "custom_speedup": custom_speedup,
+        "custom_buckets": custom_buckets,
+    }
+
+    # Side-by-Side 3-Way Algorithmic Comparison Structure
+    comparison: Dict[str, Any] = {
+        "brute_force": {
+            "name": "Brute-Force Baseline (N²)",
+            "technique": "All Pairwise Exact Jaccard",
+            "execution_ms": brute_ms,
+            "comparisons": brute_comparisons,
+            "pruned_pct": 0.0,
+            "pairs_found": len(brute_matches),
+            "recall": 1.0,
+            "precision": 1.0,
+            "f1": 1.0,
+            "speedup": 1.0,
+        },
+        "standard_lsh": {
+            "name": "Standard LSH (MinHash Banding)",
+            "technique": f"Carter-Wegman MinHash ({bands} bands × {rows_per_band} rows)",
+            "execution_ms": lsh_ms,
+            "comparisons": cand_count,
+            "pruned_pct": cand_reduction,
+            "pairs_found": len(verified_pairs),
+            "recall": ev["recall"],
+            "precision": ev["precision"],
+            "f1": ev["f1"],
+            "speedup": speedup,
+        },
+        "custom_lsh": {
+            "name": "Custom LSH (SHA-256 Modulo 4)",
+            "technique": "Deterministic Modulo Partitioning (int(SHA256, 16) % 4)",
+            "execution_ms": custom_lsh_ms,
+            "comparisons": custom_cand_count,
+            "pruned_pct": custom_cand_reduction,
+            "pairs_found": len(custom_verified_pairs),
+            "recall": custom_ev["recall"],
+            "precision": custom_ev["precision"],
+            "f1": custom_ev["f1"],
+            "speedup": custom_speedup,
+        },
     }
 
     return {
@@ -678,6 +841,22 @@ def run_analysis(
         "brute_force": {"pairs": bf_pair_dicts},
         "warnings": warnings,
         "metrics": metrics,
+        "custom_lsh": {
+            "pairs": custom_verified_pairs,
+            "rejected_pairs": custom_rejected_pairs,
+            "candidates_count": custom_cand_count,
+            "buckets": custom_bucket_map,
+            "metrics": {
+                "custom_lsh_ms": custom_lsh_ms,
+                "custom_comparisons": custom_cand_count,
+                "custom_reduction": custom_cand_reduction,
+                "custom_recall": custom_ev["recall"],
+                "custom_precision": custom_ev["precision"],
+                "custom_f1": custom_ev["f1"],
+                "custom_speedup": custom_speedup,
+            },
+        },
+        "comparison": comparison,
     }
 
 
@@ -979,7 +1158,13 @@ def main() -> None:
         f"Documents: {m['document_count']} | Candidates: {m['candidate_count']} | Matches: {m['found_pairs']}"
     )
     print(
-        f"LSH: {m['lsh_ms']} ms | Brute Force: {m['brute_ms']} ms | Recall: {m['recall']} | Speedup: {m['speedup']}x"
+        f"Standard LSH: {m['lsh_ms']} ms (Recall: {m['recall']}, Speedup: {m['speedup']}x)"
+    )
+    print(
+        f"Custom SHA-256: {m['custom_lsh_ms']} ms (Recall: {m['custom_recall']}, Speedup: {m['custom_speedup']}x)"
+    )
+    print(
+        f"Brute Force: {m['brute_ms']} ms"
     )
     for pair in res["pairs"]:
         print(f"  {pair['doc_a']} <-> {pair['doc_b']}: {pair['similarity_text']}%")

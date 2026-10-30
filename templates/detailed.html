@@ -175,13 +175,13 @@
             padding: 0.15rem 0.5rem;
             border-radius: 5px;
             font-size: 0.75rem;
-            font-family: var(--mono);
+            font-family: var(--font-mono);
             font-weight: 600;
         }
 
         .grid-2col {
             display: grid;
-            grid-template-columns: 1.25fr 1fr;
+            grid-template-columns: 1.2fr 1fr;
             gap: 1.5rem;
             margin-bottom: 1.75rem;
         }
@@ -525,13 +525,13 @@
                 <a href="/" class="btn-back">← Back to Dashboard</a>
                 <div>
                     <h1>Detailed Analysis &amp; System Benchmarks</h1>
-                    <p>In-depth pairwise verification, candidate diagnostics, sub-quadratic performance, and SHA-256 partition distributions.</p>
+                    <p>3-Way comparison of Brute Force, Standard LSH (MinHash), and Custom LSH (SHA-256 Modulo 4).</p>
                 </div>
             </div>
             <span class="brand-badge">Carter-Wegman M61</span>
         </header>
 
-        <!-- Section 1 & 2: Pairwise Results and Performance Benchmarks Grid -->
+        <!-- Section 1 & 2: Pairwise Results and 3-Way Performance Benchmarks Grid -->
         <div class="grid-2col">
             <!-- Section 1: Pairwise Similarity Verification -->
             <section class="card" id="pairwise-section">
@@ -619,14 +619,14 @@
                 </div>
             </section>
 
-            <!-- Section 2: Performance & Speedup Benchmarks -->
+            <!-- Section 2: Comprehensive 3-Way Performance & Speedup Benchmarks -->
             <section id="performance-section" class="card">
                 <div class="section-head">
                     <div>
-                        <h2>Performance Comparison</h2>
-                        <p>LSH sub-quadratic indexing vs. brute-force pairwise baseline</p>
+                        <h2>3-Way Algorithmic Comparison</h2>
+                        <p>Brute-Force (N²) vs. Standard LSH (MinHash) vs. Custom LSH (SHA-256 Modulo 4)</p>
                     </div>
-                    <span class="pill">SUB-QUADRATIC</span>
+                    <span class="pill">3-WAY BENCHMARK</span>
                 </div>
 
                 <div id="performance-table-container">
@@ -637,8 +637,9 @@
                             <thead>
                                 <tr>
                                     <th>Measure</th>
-                                    <th>LSH Sub-Quadratic</th>
                                     <th>Brute Force (n²)</th>
+                                    <th>Standard LSH (MinHash)</th>
+                                    <th>Custom LSH (SHA-256)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -648,6 +649,7 @@
                                         <br /><small class="muted">median of {{ m.timing_repeats }} runs</small>
                                         {% endif %}
                                     </td>
+                                    <td><strong>{{ m.brute_ms | default(m.last_query_linear_time_ms) | default(0.0) }} ms</strong></td>
                                     <td>
                                         <strong>{{ m.lsh_ms | default(m.last_query_lsh_time_ms) | default(0.0) }} ms</strong>
                                         {% if m.hashing_ms is defined %}
@@ -657,22 +659,35 @@
                                         </small>
                                         {% endif %}
                                     </td>
-                                    <td><strong>{{ m.brute_ms | default(m.last_query_linear_time_ms) | default(0.0) }} ms</strong></td>
+                                    <td>
+                                        <strong>{{ m.custom_lsh_ms | default(0.0) }} ms</strong>
+                                        <br />
+                                        <small class="muted">SHA-256 modulo 4</small>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>Exact Comparisons</td>
-                                    <td><strong>{{ m.lsh_comparisons | default(m.last_candidate_count) | default(0) }}</strong></td>
                                     <td><strong>{{ m.brute_comparisons | default(m.possible_pairs) | default(0) }}</strong></td>
+                                    <td><strong>{{ m.lsh_comparisons | default(m.last_candidate_count) | default(0) }}</strong></td>
+                                    <td><strong>{{ m.custom_comparisons | default(0) }}</strong></td>
                                 </tr>
                                 <tr>
-                                    <td>Pairs at or above {{ m.threshold | default(80) }}%</td>
-                                    <td><strong>{{ m.found_pairs | default(0) }}</strong></td>
+                                    <td>Comparisons Pruned</td>
+                                    <td><span class="badge">0.0% pruned</span></td>
+                                    <td><strong style="color: var(--primary);">{{ m.candidate_reduction | default(0.0) }}% pruned</strong></td>
+                                    <td><strong style="color: var(--primary);">{{ m.custom_candidate_reduction | default(0.0) }}% pruned</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Pairs Above {{ m.threshold | default(80) }}%</td>
                                     <td><strong>{{ m.true_pairs | default(0) }}</strong></td>
+                                    <td><strong>{{ m.found_pairs | default(0) }}</strong></td>
+                                    <td><strong>{{ m.custom_found_pairs | default(0) }}</strong></td>
                                 </tr>
                                 <tr>
-                                    <td>Recall / Precision</td>
+                                    <td>Empirical Recall</td>
+                                    <td>100.0%</td>
                                     <td>
-                                        <strong>
+                                        <strong style="color: var(--primary);">
                                             {% if m.recall is defined and m.recall is not none %}
                                                 {{ "%.1f"|format(m.recall * 100) }}%
                                             {% elif m.recall_at_k is defined and m.recall_at_k is not none %}
@@ -681,8 +696,22 @@
                                                 100.0%
                                             {% endif %}
                                         </strong>
-                                        /
+                                    </td>
+                                    <td>
                                         <strong>
+                                            {% if m.custom_recall is defined and m.custom_recall is not none %}
+                                                {{ "%.1f"|format(m.custom_recall * 100) }}%
+                                            {% else %}
+                                                100.0%
+                                            {% endif %}
+                                        </strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Empirical Precision</td>
+                                    <td>100.0%</td>
+                                    <td>
+                                        <strong style="color: var(--primary);">
                                             {% if m.precision is defined and m.precision is not none %}
                                                 {{ "%.1f"|format(m.precision * 100) }}%
                                             {% elif m.precision_at_k is defined and m.precision_at_k is not none %}
@@ -692,21 +721,52 @@
                                             {% endif %}
                                         </strong>
                                     </td>
-                                    <td>100% / 100%</td>
+                                    <td>
+                                        <strong>
+                                            {% if m.custom_precision is defined and m.custom_precision is not none %}
+                                                {{ "%.1f"|format(m.custom_precision * 100) }}%
+                                            {% else %}
+                                                100.0%
+                                            {% endif %}
+                                        </strong>
+                                    </td>
                                 </tr>
                                 <tr>
-                                    <td>Speedup / Pruned Comparisons</td>
+                                    <td>F1 Score</td>
+                                    <td>1.00</td>
+                                    <td>
+                                        <strong>
+                                            {% if m.f1 is defined and m.f1 is not none %}
+                                                {{ "%.2f"|format(m.f1) }}
+                                            {% else %}
+                                                1.00
+                                            {% endif %}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <strong>
+                                            {% if m.custom_f1 is defined and m.custom_f1 is not none %}
+                                                {{ "%.2f"|format(m.custom_f1) }}
+                                            {% else %}
+                                                1.00
+                                            {% endif %}
+                                        </strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Speedup Factor</td>
+                                    <td>1.00× (Baseline)</td>
                                     <td><strong style="color: var(--primary);">{{ m.speedup | default(m.speedup_factor) | default(1.0) }}×</strong></td>
-                                    <td><strong style="color: var(--primary);">{{ m.candidate_reduction | default(0.0) }}% pruned</strong></td>
+                                    <td><strong style="color: var(--primary);">{{ m.custom_speedup | default(1.0) }}×</strong></td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    {% if m.extraction_ms is defined %}
-                    <p class="muted" style="margin-top: 0.65rem; font-size: 0.74rem;">
-                        Shared extraction ({{ m.extraction_ms }} ms) and text cleaning ({{ m.preprocessing_ms }} ms) are measured separately.
-                    </p>
-                    {% endif %}
+
+                    <div style="margin-top: 0.95rem; padding: 0.8rem 1rem; background: var(--surface-subtle); border-radius: 8px; border: 1px solid var(--border); font-size: 0.78rem; line-height: 1.5;">
+                        <strong style="color: var(--text-main);">Theoretical Insight:</strong>
+                        Standard LSH (MinHash) links collision probability directly to similarity ($P(h(A)=h(B))=J(A,B)$), maintaining high recall while pruning non-candidates. Custom LSH (SHA-256 Modulo) exhibits cryptographic avalanche, uniformly scattering documents across the 4 buckets (~25% collision probability), which leads to heavy false negatives for near duplicates.
+                    </div>
                     {% else %}
                     <p class="muted" style="padding: 1.5rem 0; text-align: center;">No benchmark metrics available.</p>
                     {% endif %}
@@ -802,7 +862,7 @@
                             data-hash="{{ rec.truncated_hash | lower }}">
                             <div class="record-top">
                                 <div>
-                                    <span class="muted" style="font-size: 0.68rem; font-family: var(--mono);">{{ rec.id }}</span>
+                                    <span class="muted" style="font-size: 0.68rem; font-family: var(--font-mono);">{{ rec.id }}</span>
                                     <div class="record-name">{{ rec.name }}</div>
                                 </div>
                             </div>

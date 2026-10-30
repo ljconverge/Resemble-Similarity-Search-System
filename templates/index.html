@@ -150,20 +150,6 @@
             font-weight: 500;
         }
 
-        .alert-success {
-            background: var(--primary-light);
-            border: 1px solid var(--primary-border);
-            color: #065f46;
-            padding: 0.95rem 1.25rem;
-            border-radius: 10px;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-
         /* --------------------------------------------- Top-Level Aggregate KPIs */
         .kpi-grid {
             display: grid;
@@ -208,7 +194,7 @@
         }
 
         .kpi-value {
-            font-size: 1.75rem;
+            font-size: 1.65rem;
             font-weight: 800;
             letter-spacing: -0.025em;
             color: var(--text-main);
@@ -393,7 +379,7 @@
 
         .summary-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
             gap: 1rem;
             margin-top: 1rem;
             padding-top: 1rem;
@@ -465,8 +451,8 @@
         <!-- Header -->
         <header class="navbar">
             <div class="brand-block">
-                <h1>Resemble Similarity Search <span class="brand-badge">Mersenne M61</span></h1>
-                <p>Deterministic SHA-256 Partitioning &amp; MinHash Locality-Sensitive Hashing</p>
+                <h1>Resemble Similarity Search <span class="brand-badge">Carter-Wegman M61</span></h1>
+                <p>Locality-Sensitive Hashing &amp; Deterministic Modulo Bucketing Comparison Engine</p>
             </div>
             <nav class="nav-links" aria-label="Main Navigation">
                 <a href="/" class="nav-btn active">Dashboard</a>
@@ -478,7 +464,7 @@
         <div class="alert-error" id="global-error" role="alert">{{ error }}</div>
         {% endif %}
 
-        <!-- Top-Level Aggregate KPIs -->
+        <!-- Top-Level Aggregate KPIs (Minimalist Side-by-Side Dual Metrics) -->
         <section id="performance-section" class="kpi-grid" aria-label="System Overview">
             <div class="kpi-card">
                 <div class="kpi-label">Total Documents</div>
@@ -491,7 +477,7 @@
                         0
                     {% endif %}
                 </div>
-                <div class="kpi-desc">Indexed &amp; verified in corpus</div>
+                <div class="kpi-desc">Processed corpus items</div>
             </div>
 
             <div class="kpi-card">
@@ -508,27 +494,37 @@
                     </span>
                     <small style="font-size: 0.95rem; font-weight: 600; color: var(--text-muted);">ms</small>
                 </div>
-                <div class="kpi-desc">LSH candidate &amp; verification</div>
-            </div>
-
-            <div class="kpi-card">
-                <div class="kpi-label">Verified Matches</div>
-                <div class="kpi-value" id="kpi-verified-matches">
-                    {{ analysis.pairs | length if analysis and analysis.pairs else 0 }}
+                <div class="kpi-desc">
+                    Baseline Brute-Force: {{ analysis.metrics.brute_ms if analysis and analysis.metrics else 0.0 }} ms
                 </div>
-                <div class="kpi-desc">Document pairs meeting threshold</div>
             </div>
 
+            <!-- Single clean KPI card displaying the top-level dual recall metrics side-by-side -->
             <div class="kpi-card">
-                <div class="kpi-label">Comparisons Pruned</div>
-                <div class="kpi-value" id="kpi-pruned">
+                <div class="kpi-label">Dual Recall (Std vs Custom)</div>
+                <div class="kpi-value">
                     {% if analysis and analysis.metrics %}
-                        {{ analysis.metrics.candidate_reduction }}%
+                        {{ "%.0f"|format(analysis.metrics.recall * 100) }}% <span style="font-size: 1.1rem; font-weight: 400; color: var(--text-muted);">vs</span> {{ "%.0f"|format(analysis.metrics.custom_recall * 100) }}%
                     {% else %}
-                        0.0%
+                        100% <span style="font-size: 1.1rem; font-weight: 400; color: var(--text-muted);">vs</span> 100%
                     {% endif %}
                 </div>
-                <div class="kpi-desc">Sub-quadratic checks saved</div>
+                <div class="kpi-desc">Standard MinHash vs. SHA-256 Modulo</div>
+            </div>
+
+            <!-- Single clean KPI card displaying the top-level dual speedup metrics side-by-side -->
+            <div class="kpi-card">
+                <div class="kpi-label">Dual Speedup (Std vs Custom)</div>
+                <div class="kpi-value" style="color: var(--primary);">
+                    {% if analysis and analysis.metrics %}
+                        {{ analysis.metrics.speedup }}× <span style="font-size: 1.1rem; font-weight: 400; color: var(--text-muted);">vs</span> {{ analysis.metrics.custom_speedup }}×
+                    {% else %}
+                        1.0× <span style="font-size: 1.1rem; font-weight: 400; color: var(--text-muted);">vs</span> 1.0×
+                    {% endif %}
+                </div>
+                <div class="kpi-desc">
+                    Comparisons pruned: {{ analysis.metrics.candidate_reduction if analysis and analysis.metrics else 0.0 }}%
+                </div>
             </div>
         </section>
 
@@ -546,39 +542,33 @@
                         </p>
                     </div>
                     <a href="/detailed-analysis" class="btn-primary">
-                        View Detailed Analysis &amp; Visualizations →
+                        View 3-Way Comparison &amp; Detailed Analysis →
                     </a>
                 </div>
 
                 <div class="summary-stats">
                     <div class="stat-item">
-                        <span class="lbl">Near-Duplicate Pairs</span>
-                        <span class="val" style="color: var(--primary);">{{ analysis.pairs | length }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="lbl">Max Similarity Observed</span>
-                        <span class="val">
-                            {{ analysis.metrics.max_similarity_text | default('0.00') }}%
+                        <span class="lbl">Standard LSH Recall</span>
+                        <span class="val" style="color: var(--primary);">
+                            {{ "%.1f"|format(analysis.metrics.recall * 100) }}%
                         </span>
                     </div>
                     <div class="stat-item">
-                        <span class="lbl">Empirical Recall</span>
+                        <span class="lbl">Custom SHA-256 Recall</span>
                         <span class="val">
-                            {% if analysis.metrics.recall is not none %}
-                                {{ "%.1f"|format(analysis.metrics.recall * 100) }}%
-                            {% else %}
-                                100.0%
-                            {% endif %}
+                            {{ "%.1f"|format(analysis.metrics.custom_recall * 100) }}%
                         </span>
                     </div>
                     <div class="stat-item">
-                        <span class="lbl">Empirical Precision</span>
+                        <span class="lbl">Standard LSH Speedup</span>
+                        <span class="val" style="color: var(--primary);">
+                            {{ analysis.metrics.speedup }}×
+                        </span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="lbl">Custom SHA-256 Speedup</span>
                         <span class="val">
-                            {% if analysis.metrics.precision is not none %}
-                                {{ "%.1f"|format(analysis.metrics.precision * 100) }}%
-                            {% else %}
-                                100.0%
-                            {% endif %}
+                            {{ analysis.metrics.custom_speedup }}×
                         </span>
                     </div>
                 </div>
@@ -586,11 +576,11 @@
             {% endif %}
         </div>
 
-        <!-- Main Configuration & Upload Form -->
+        <!-- Main Configuration & Upload Form (ONLY ONE Primary Action Button) -->
         <section class="card" aria-label="Upload and Analysis Form">
             <div class="section-head">
                 <h2>Upload &amp; Analyze Documents</h2>
-                <p>Upload files (.pdf, .txt) to detect near-duplicates using Carter-Wegman MinHash LSH and SHA-256 partition clustering.</p>
+                <p>Upload files (.pdf, .txt) to benchmark Standard MinHash LSH and Custom SHA-256 Modulo Partitioning against Brute Force.</p>
             </div>
 
             <div id="analyze-error-banner" class="alert-error hidden" role="alert"></div>
@@ -692,15 +682,15 @@
         </section>
     </div>
 
-    <!-- Client-side SPA Automation Script -->
+    <!-- Client-side Script -->
     <script>
         function updateFileName(input) {
             const labelText = document.getElementById("file-label-text");
             if (input.files && input.files.length > 0) {
                 if (input.files.length === 1) {
-                    labelText.textContent = `Selected: ${input.files[0].name}`;
+                    labelText.textContent = input.files[0].name;
                 } else {
-                    labelText.textContent = `Selected ${input.files.length} files`;
+                    labelText.textContent = input.files.length + " files selected";
                 }
             } else {
                 labelText.textContent = "Select PDF or TXT files to upload";
@@ -708,196 +698,113 @@
         }
 
         function syncLabels() {
-            const modeEl = document.getElementById("shingle-mode");
-            const kInput = document.getElementById("shingle-size");
+            const mode = document.getElementById("shingle-mode").value;
             const kLabel = document.getElementById("k-label");
-            if (!modeEl || !kInput || !kLabel) return;
-            const isWord = modeEl.value === "word";
-            const lo = 1;
-            const hi = isWord ? 20 : 30;
-            kInput.min = String(lo);
-            kInput.max = String(hi);
-            const k = parseInt(kInput.value, 10);
-            if (isNaN(k) || k < lo || k > hi) {
-                kInput.value = isWord ? "3" : "9";
+            const kInput = document.getElementById("shingle-size");
+            if (mode === "char") {
+                kLabel.textContent = "Shingle size k (1–30)";
+                kInput.max = 30;
+                if (parseInt(kInput.value, 10) > 30) kInput.value = 9;
+            } else {
+                kLabel.textContent = "Shingle size k (1–20)";
+                kInput.max = 20;
+                if (parseInt(kInput.value, 10) > 20) kInput.value = 3;
             }
-            kLabel.textContent = isWord ? "Shingle size k (1–20)" : "Shingle size k (1–30)";
         }
 
-        const modeSelect = document.getElementById("shingle-mode");
-        if (modeSelect) {
-            modeSelect.addEventListener("change", syncLabels);
-        }
+        document.getElementById("shingle-mode").addEventListener("change", syncLabels);
 
         window.addEventListener("pageshow", function () {
+            syncLabels();
             const btn = document.getElementById("analyze-submit-btn");
             if (btn) btn.disabled = false;
-            syncLabels();
+            const spinner = document.getElementById("btn-spinner");
+            if (spinner) spinner.classList.add("hidden");
+            const spinnerText = document.getElementById("analyze-spinner-text");
+            if (spinnerText) spinnerText.classList.add("hidden");
         });
 
-        // Async Upload & Analysis Submission
+        // Form Submit Handler
         const analyzeForm = document.getElementById("analyze-form");
         if (analyzeForm) {
             analyzeForm.addEventListener("submit", async function (e) {
-                e.preventDefault();
+                const kInput = document.getElementById("shingle-size");
+                const k = parseInt(kInput.value, 10);
+                const mode = document.getElementById("shingle-mode").value;
+                const lo = 1;
+                const hi = mode === "char" ? 30 : 20;
 
-                const btn = document.getElementById("analyze-submit-btn");
-                const btnSpinner = document.getElementById("btn-spinner");
-                const btnText = document.getElementById("btn-text");
-                const spinnerText = document.getElementById("analyze-spinner-text");
-                const errBanner = document.getElementById("analyze-error-banner");
-                const fileInput = document.getElementById("file-input");
+                const errorBanner = document.getElementById("analyze-error-banner");
+                errorBanner.classList.add("hidden");
 
-                if (errBanner) {
-                    errBanner.classList.add("hidden");
-                    errBanner.textContent = "";
-                }
-
-                if (!fileInput.files || fileInput.files.length === 0) {
-                    if (errBanner) {
-                        errBanner.textContent = "Please select at least one PDF or TXT file to upload.";
-                        errBanner.classList.remove("hidden");
-                    }
+                if (isNaN(k) || k < lo || k > hi) {
+                    e.preventDefault();
+                    errorBanner.textContent = `Shingle size k must be between ${lo} and ${hi} for ${mode} shingles.`;
+                    errorBanner.classList.remove("hidden");
                     return;
                 }
 
-                if (btn) btn.disabled = true;
-                if (btnSpinner) btnSpinner.classList.remove("hidden");
-                if (btnText) btnText.textContent = "Analyzing files...";
-                if (spinnerText) spinnerText.classList.remove("hidden");
-
-                const formData = new FormData(analyzeForm);
-
-                try {
-                    const response = await fetch("/api/analyze", {
-                        method: "POST",
-                        headers: { "X-Requested-With": "XMLHttpRequest" },
-                        body: formData,
-                    });
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        if (errBanner) {
-                            errBanner.textContent = data.error || "Analysis failed.";
-                            errBanner.classList.remove("hidden");
-                        }
-                        return;
-                    }
-
-                    if (data.analysis) {
-                        updateDashboardKPIs(data.analysis);
-                        renderSummaryBox(data.analysis);
-                    }
-                } catch (err) {
-                    if (errBanner) {
-                        errBanner.textContent = "Network error while submitting files.";
-                        errBanner.classList.remove("hidden");
-                    }
-                } finally {
-                    if (btn) btn.disabled = false;
-                    if (btnSpinner) btnSpinner.classList.add("hidden");
-                    if (btnText) btnText.textContent = "Analyze uploaded files";
-                    if (spinnerText) spinnerText.classList.add("hidden");
+                const fileInput = document.getElementById("file-input");
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    e.preventDefault();
+                    errorBanner.textContent = "Please select at least one PDF or TXT document to upload.";
+                    errorBanner.classList.remove("hidden");
+                    return;
                 }
+
+                // Show spinner
+                const btn = document.getElementById("analyze-submit-btn");
+                btn.disabled = true;
+                document.getElementById("btn-spinner").classList.remove("hidden");
+                document.getElementById("analyze-spinner-text").classList.remove("hidden");
             });
         }
 
-        function updateDashboardKPIs(analysis) {
-            const m = analysis.metrics;
-            const docEl = document.getElementById("kpi-num-docs");
-            if (docEl) docEl.textContent = String(m.document_count);
-
-            const timeEl = document.getElementById("kpi-lsh-time");
-            if (timeEl) timeEl.textContent = String(m.lsh_ms);
-
-            const matchEl = document.getElementById("kpi-verified-matches");
-            if (matchEl) matchEl.textContent = String(analysis.pairs ? analysis.pairs.length : 0);
-
-            const pruneEl = document.getElementById("kpi-pruned");
-            if (pruneEl) pruneEl.textContent = `${m.candidate_reduction}%`;
-        }
-
-        function renderSummaryBox(analysis) {
-            const m = analysis.metrics;
-            const wrap = document.getElementById("analysis-summary-wrapper");
-            if (!wrap) return;
-
-            const recallStr = m.recall !== null ? (m.recall * 100).toFixed(1) + "%" : "100.0%";
-            const precStr = m.precision !== null ? (m.precision * 100).toFixed(1) + "%" : "100.0%";
-            const maxSimStr = m.max_similarity_text || "0.00";
-
-            wrap.innerHTML = `
-                <div class="summary-box">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-                        <div>
-                            <h3 style="font-size: 1.1rem; color: #065f46; font-weight: 700;">
-                                ✓ Analysis Completed: ${analysis.documents.length} Documents Processed
-                            </h3>
-                            <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 0.15rem;">
-                                ${escapeHtml(analysis.source_label)} · Cutoff threshold: ${m.threshold}%
-                            </p>
-                        </div>
-                        <a href="/detailed-analysis" class="btn-primary">
-                            View Detailed Analysis &amp; Visualizations →
-                        </a>
-                    </div>
-
-                    <div class="summary-stats">
-                        <div class="stat-item">
-                            <span class="lbl">Near-Duplicate Pairs</span>
-                            <span class="val" style="color: var(--primary);">${analysis.pairs ? analysis.pairs.length : 0}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="lbl">Max Similarity Observed</span>
-                            <span class="val">${maxSimStr}%</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="lbl">Empirical Recall</span>
-                            <span class="val">${recallStr}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="lbl">Empirical Precision</span>
-                            <span class="val">${precStr}</span>
-                        </div>
-                    </div>
-                </div>`;
-            wrap.classList.remove("hidden");
-        }
-
-        // Quick Query Search
+        // Live Search Form
         const searchForm = document.getElementById("search-form");
         if (searchForm) {
-            searchForm.addEventListener("submit", async function(e) {
+            searchForm.addEventListener("submit", async function (e) {
                 e.preventDefault();
-                const q = document.getElementById("query-input").value.trim();
+                const query = document.getElementById("query-input").value.trim();
                 const top_k = parseInt(document.getElementById("topk-input").value || "5", 10);
                 const preview = document.getElementById("search-results-preview");
-                if (!q) return;
+
+                if (!query) return;
 
                 try {
-                    const res = await fetch("/api/search", {
+                    const response = await fetch("/api/search", {
                         method: "POST",
-                        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
-                        body: JSON.stringify({ query: q, top_k: top_k })
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-Requested-With": "XMLHttpRequest"
+                        },
+                        body: JSON.stringify({ query, top_k })
                     });
-                    const data = await res.json();
-                    if (!res.ok) return;
+                    const data = await response.json();
 
-                    if (preview) {
-                        preview.classList.remove("hidden");
-                        if (!data.results || data.results.length === 0) {
-                            preview.innerHTML = `<p class="muted" style="font-size: 0.82rem;">No matching documents found above threshold.</p>`;
-                        } else {
-                            preview.innerHTML = data.results.map(r => `
-                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid var(--border);">
-                                    <strong style="font-size: 0.85rem;">${escapeHtml(r.doc_id)}</strong>
-                                    <span style="font-size: 0.78rem; font-weight: 700; color: var(--primary);">Jaccard: ${r.exact_jaccard}</span>
-                                </div>
-                            `).join("");
-                        }
+                    if (!response.ok) return;
+
+                    preview.classList.remove("hidden");
+                    if (!data.results || data.results.length === 0) {
+                        preview.innerHTML = '<p class="muted" style="font-size: 0.82rem;">No matching documents found in corpus.</p>';
+                        return;
                     }
+
+                    preview.innerHTML = `
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem;">
+                            Top Matches (${data.results.length}):
+                        </div>
+                        <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.84rem;">
+                            ${data.results.map((r) => `
+                                <li style="display: flex; justify-content: space-between; align-items: center; background: var(--surface-subtle); padding: 0.4rem 0.65rem; border-radius: 6px;">
+                                    <span><strong>${escapeHtml(r.doc_id)}</strong></span>
+                                    <span>Jaccard: <strong>${r.exact_jaccard}</strong> · Est: <strong>${r.estimated_similarity}</strong></span>
+                                </li>
+                            `).join("")}
+                        </ul>
+                    `;
                 } catch (err) {
-                    console.error(err);
+                    console.error("Search failed:", err);
                 }
             });
         }
