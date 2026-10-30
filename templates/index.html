@@ -683,20 +683,6 @@
             border: 1px solid var(--border);
         }
 
-        /* --------------------------------------------- Compact Query Search Bar */
-        .search-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.25rem 1.5rem;
-            box-shadow: var(--shadow-xs);
-        }
-
-        .search-inline-row {
-            display: flex;
-            gap: 0.65rem;
-            align-items: center;
-        }
 
         .spinner {
             display: inline-block;
@@ -950,20 +936,7 @@
                 </form>
             </section>
 
-            <!-- Compact Query Search Bar -->
-            <section class="search-card" aria-label="Query Corpus">
-                <form id="search-form" action="/api/search" method="POST">
-                    <div class="search-inline-row">
-                        <input type="text" id="query-input" name="query"
-                            placeholder="Quick query search (e.g. deep residual learning for image recognition)..."
-                            value="{{ query or '' }}" style="flex: 1;" required />
-                        <input type="number" id="topk-input" name="top_k" value="5" min="1" max="50"
-                            style="width: 70px;" title="Top-K Results" />
-                        <button type="submit" class="btn-primary" id="search-btn" style="padding: 0.6rem 1.25rem;">Search</button>
-                    </div>
-                </form>
-                <div id="search-results-preview" class="hidden" style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.75rem;"></div>
-            </section>
+
         </div>
 
         <!-- ================================================================= -->
@@ -1854,56 +1827,7 @@
             });
         }
 
-        // -------------------------------------------------------------------
-        // Live Query Search Form
-        // -------------------------------------------------------------------
-        const searchForm = document.getElementById("search-form");
-        if (searchForm) {
-            searchForm.addEventListener("submit", async function (e) {
-                e.preventDefault();
-                const query = document.getElementById("query-input").value.trim();
-                const top_k = parseInt(document.getElementById("topk-input").value || "5", 10);
-                const preview = document.getElementById("search-results-preview");
 
-                if (!query) return;
-
-                try {
-                    const response = await fetch("/api/search", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-Requested-With": "XMLHttpRequest"
-                        },
-                        body: JSON.stringify({ query, top_k })
-                    });
-                    const data = await response.json();
-
-                    if (!response.ok) return;
-
-                    preview.classList.remove("hidden");
-                    if (!data.results || data.results.length === 0) {
-                        preview.innerHTML = '<p class="muted" style="font-size: 0.82rem;">No matching documents found in corpus.</p>';
-                        return;
-                    }
-
-                    preview.innerHTML = `
-                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem;">
-                            Top Matches (${data.results.length}):
-                        </div>
-                        <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.84rem;">
-                            ${data.results.map((r) => `
-                                <li style="display: flex; justify-content: space-between; align-items: center; background: var(--surface-subtle); padding: 0.4rem 0.65rem; border-radius: 6px;">
-                                    <span><strong>${escapeHtml(r.doc_id)}</strong></span>
-                                    <span>Jaccard: <strong>${r.exact_jaccard}</strong> · Est: <strong>${r.estimated_similarity}</strong></span>
-                                </li>
-                            `).join("")}
-                        </ul>
-                    `;
-                } catch (err) {
-                    console.error("Search failed:", err);
-                }
-            });
-        }
 
         function escapeHtml(str) {
             if (!str) return "";
