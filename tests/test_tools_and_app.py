@@ -15,7 +15,7 @@ def test_spa_index_loads(client):
     assert res.status_code == 200
     html = res.get_data(as_text=True)
     assert "Resemble Similarity Search" in html
-    assert 'id="search-form"' in html
+    assert 'id="analyze-form"' in html
     assert 'id="performance-section"' in html
 
 
