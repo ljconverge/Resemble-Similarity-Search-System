@@ -118,6 +118,14 @@ def get_benchmark_corpus():
     return docs, manifest, freqs, doc_ids, best_matches, {"low": lsh_low, "mid": lsh_mid, "high": lsh_high}
 
 
+def style_lsh_status(status: str) -> str:
+    """Highlight retrieval status while keeping the text label visible."""
+    return {
+        "Retrieved by LSH": "background-color: #dcfce7; color: #14532d;",
+        "Missed by LSH": "background-color: #fee2e2; color: #7f1d1d;",
+    }.get(status, "")
+
+
 def extract_uploaded_text(uploaded_file) -> str:
     """Extracts text content from uploaded .txt, .pdf, or .docx file."""
     name = uploaded_file.name.lower()
@@ -171,7 +179,7 @@ docs, manifest, corpus_freqs, doc_ids, best_matches, lsh_models = get_benchmark_
 # ==============================================================================
 if mode == "Benchmark corpus":
     st.markdown("### Benchmark settings")
-    
+
     col1, col2, col3 = st.columns([2.5, 1.5, 1])
     with col1:
         doc_options = ["ALL (Compare All 4,950 Pairs)"] + [
@@ -207,11 +215,11 @@ if mode == "Benchmark corpus":
             if selected_doc_id == "ALL":
                 # Brute Force All Pairs
                 bf_res = brute_force_all_pairs(docs, threshold=threshold_val, cached_freqs=corpus_freqs)
-                
+
                 # LSH All Pairs
                 lsh_key = "low" if threshold_val < 0.35 else ("mid" if threshold_val < 0.60 else "high")
                 lsh_res = lsh_models[lsh_key].find_all_matches(threshold=threshold_val)
-                
+
                 bf_time = max(bf_res["execution_ms"], 0.001)
                 lsh_time = max(lsh_res["search_ms"], 0.0005)
                 # Ensure LSH speedup is always maintained
@@ -288,7 +296,7 @@ if mode == "Benchmark corpus":
                     })
 
                 if table_rows:
-                    st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
+                    st.dataframe(pd.DataFrame(table_rows).style.map(style_lsh_status, subset=["Status in LSH"]), use_container_width=True)
                 else:
                     st.info("No document pairs to display for this filter.")
 
@@ -374,7 +382,7 @@ if mode == "Benchmark corpus":
                     })
 
                 if table_rows:
-                    st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
+                    st.dataframe(pd.DataFrame(table_rows).style.map(style_lsh_status, subset=["Status in LSH"]), use_container_width=True)
                 else:
                     best_partner, best_sim = best_matches.get(selected_doc_id, ("", 0.0))
                     st.info(f"No documents have similarity ≥ {int(threshold_val*100)}% with `{selected_doc_id}`. (Its highest similarity in the corpus is {best_sim}% with `{best_partner}`). Lower the threshold slider to see matches.")
@@ -418,7 +426,7 @@ else:
         st.info("**No comparison results yet.** Please upload at least **2 documents** above and click **'Compare uploads'**.")
     elif compare_upload_btn:
         up_btn_placeholder.button("Processing...", disabled=True, use_container_width=True, key="btn_up_proc")
-        
+
         # Extract text from files
         uploaded_docs: Dict[str, str] = {}
         for f in uploaded_files:
@@ -518,7 +526,7 @@ else:
                 })
 
             if table_rows:
-                st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
+                st.dataframe(pd.DataFrame(table_rows).style.map(style_lsh_status, subset=["Status in LSH"]), use_container_width=True)
             else:
                 st.info(f"No document pairs had similarity ≥ {int(upload_threshold*100)}%. Lower the threshold slider to see matches.")
 
