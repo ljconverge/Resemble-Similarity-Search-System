@@ -1,5 +1,7 @@
 # Resemble Similarity Search System
 
+**Live demo:** [Open the Streamlit dashboard](https://resemble-similarity-search-system.streamlit.app/)
+
 Resemble is a Streamlit application for finding near-duplicate text documents. It compares an exhaustive brute-force baseline with a search pipeline that uses ProbMinHash and locality-sensitive hashing (LSH). The dashboard shows which matches LSH retrieved, which it missed, and how the two methods compare at a selected similarity threshold.
 
 ## Quick start on Windows
