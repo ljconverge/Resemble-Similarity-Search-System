@@ -3,7 +3,7 @@ Algorithm/probminhash.py
 ========================
 Pure implementation of Otmar Ertl's ProbMinHash algorithm (IEEE TKDE 2022).
 Generates compact integer MinHash signatures for weighted word distributions.
-Zero external algorithm libraries. Short, simple, and reusable.
+Zero external algorithm libraries.
 """
 
 from __future__ import annotations

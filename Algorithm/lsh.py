@@ -3,7 +3,7 @@ Algorithm/lsh.py
 ================
 Locality-Sensitive Hashing (LSH) using Banding on ProbMinHash Signatures.
 Reuses ProbMinHasher and estimate_similarity directly from Algorithm.probminhash.
-Zero external algorithm libraries. Short, simple, and clean.
+Zero external algorithm libraries.
 """
 
 from __future__ import annotations
@@ -18,8 +18,7 @@ from Algorithm.probminhash import ProbMinHasher, estimate_similarity
 
 class ProbMinHashLSH:
     """Locality-Sensitive Hashing (LSH) Index using Banded ProbMinHash Signatures.
-    
-    Viva Explanation:
+
       1. Hashes documents into m-dimensional integer signatures using ProbMinHasher.
       2. Partitions the m hash values into b bands of r rows (m = b * r).
       3. Any documents sharing the exact same bucket in >= 1 band are candidate pairs!

@@ -3,7 +3,7 @@ Algorithm/evaluation.py
 =======================
 Evaluation metrics for comparing Brute-Force (Ground Truth) vs. LSH.
 Calculates Precision, Recall (Accuracy), F1-Score, Speedup, and Trade-off summaries.
-Zero external algorithm libraries. Easy to explain in viva.
+Zero external algorithm libraries. 
 """
 
 from __future__ import annotations
@@ -16,8 +16,7 @@ def evaluate_accuracy(
     ground_truth_matches: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
     """Computes Recall (Accuracy), Precision, F1-Score, and identifies missed pairs.
-    
-    Viva Explanation:
+
       - Ground Truth = All true pairs found by exhaustive Brute Force.
       - Retrieved = Pairs returned by LSH above threshold.
       - Recall (Accuracy) = |Retrieved ∩ Ground Truth| / |Ground Truth|
