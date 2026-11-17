@@ -1,0 +1,990 @@
+{
+  "total_documents": 100,
+  "real_documents_count": 30,
+  "real_documents_percentage": 30.0,
+  "synthetic_documents_count": 70,
+  "synthetic_documents_percentage": 70.0,
+  "categories": {
+    "Real Domain Corpus": 30,
+    "Synthetic (Zipfian Power-Law)": 35,
+    "Synthetic (Calibrated Overlap)": 35
+  },
+  "reference_paper": {
+    "title": "ProbMinHash \u2013 A Class of Locality-Sensitive Hash Algorithms for the (Probability) Jaccard Similarity",
+    "author": "Otmar Ertl",
+    "journal": "IEEE Transactions on Knowledge and Data Engineering (TKDE), 2022",
+    "arxiv": "arXiv:1911.00675"
+  },
+  "documents": [
+    {
+      "id": "REAL_CS_01_ResNet",
+      "title": "Deep Residual Learning for Image Recognition",
+      "text": "Deeper neural networks are more difficult to train. We present a residual learning framework to ease the training of networks that are substantially deeper than those used previously. We explicitly reformulate the layers as learning residual functions with reference to the layer inputs, instead of learning unreferenced functions. Comprehensive empirical evidence shows that these residual networks are easier to optimize and can gain accuracy from considerably increased depth. On the ImageNet dataset we evaluate residual nets with a depth of up to one hundred and fifty-two layers, which are eight times deeper than VGG nets but still have lower computational complexity. An ensemble of these residual nets achieves error on the ImageNet test set, winning first place in the classification task.",
+      "is_synthetic": false,
+      "category": "Computer Science",
+      "generation_type": "real_domain_data",
+      "word_count": 121
+    },
+    {
+      "id": "REAL_CS_02_Transformer",
+      "title": "Attention Is All You Need and Transformer Networks",
+      "text": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks in an encoder-decoder configuration. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. Experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. The model achieves state of the art results on English to German and English to French translation.",
+      "is_synthetic": false,
+      "category": "Computer Science",
+      "generation_type": "real_domain_data",
+      "word_count": 94
+    },
+    {
+      "id": "REAL_CS_03_GCN",
+      "title": "Semi-Supervised Classification with Graph Convolutional Networks",
+      "text": "We present a scalable approach for semi-supervised learning on graph-structured data. It is based on an efficient variant of convolutional neural networks which operate directly on graphs. We motivate the choice of our convolutional architecture via a localized first-order approximation of spectral graph convolutions. Our model scales linearly in the number of graph edges and learns hidden layer representations that encode both local graph structure and features of nodes. In several experiments on citation networks and a knowledge graph dataset, we demonstrate that our approach outperforms related methods by a significant margin.",
+      "is_synthetic": false,
+      "category": "Computer Science",
+      "generation_type": "real_domain_data",
+      "word_count": 92
+    },
+    {
+      "id": "REAL_CS_04_Paxos",
+      "title": "Paxos and Distributed Consensus in Fault-Tolerant Systems",
+      "text": "The Paxos protocol guarantees safety in asynchronous distributed systems with crash-stop or crash-recovery fault models. Consensus is achieved through rounds of proposals, where proposers request promises from a quorum of acceptors before committing values. By decoupling the leader election phase from the replicated state machine log execution, Multi-Paxos enables high-throughput state machine replication. Practical deployments such as Google Chubby and Apache ZooKeeper adapt Paxos principles to handle network partitions, disk write latencies, and dynamic cluster membership reconfiguration.",
+      "is_synthetic": false,
+      "category": "Computer Science",
+      "generation_type": "real_domain_data",
+      "word_count": 77
+    },
+    {
+      "id": "REAL_CS_05_LSH_MinHash",
+      "title": "Locality-Sensitive Hashing for Scalable Similarity Search",
+      "text": "Locality-Sensitive Hashing resolves the curse of dimensionality in high-dimensional nearest neighbor queries. By applying hash functions where collision probability is strictly proportional to the underlying metric similarity, sub-quadratic candidate filtering replaces exhaustive all-pairs brute-force comparison. For unweighted sets, Broder's MinHash preserves the classic Jaccard index. For weighted feature vectors and probability distributions, consistent weighted sampling and Ertl's ProbMinHash align hash collision probabilities directly with the probability Jaccard similarity.",
+      "is_synthetic": false,
+      "category": "Computer Science",
+      "generation_type": "real_domain_data",
+      "word_count": 68
+    },
+    {
+      "id": "REAL_CS_06_LinuxKernel",
+      "title": "Virtual Memory and Page Replacement in Operating System Kernels",
+      "text": "Modern operating system kernels manage physical memory via multi-level page tables and virtual address translation. The Translation Lookaside Buffer caches virtual to physical address translations, minimizing hardware traversal penalties. Demand paging loads pages into memory on demand when page faults occur. Page replacement policies, such as least recently used approximations and clock algorithms, balance working set retention against page thrashing. Copy-on-write optimizations defer page duplication until memory writes occur, optimizing process creation through fork.",
+      "is_synthetic": false,
+      "category": "Computer Science",
+      "generation_type": "real_domain_data",
+      "word_count": 74
+    },
+    {
+      "id": "REAL_SEC_01_RSA",
+      "title": "Public-Key Cryptography and RSA Algorithm Foundations",
+      "text": "Public-key cryptography enables secure communication over untrusted channels without prior shared secret keys. The RSA cryptosystem relies on the computational intractability of factoring large composite integers into prime factors. The key generation process selects two large prime numbers, computes their modulus and Euler totient function, and derives public encryption and private decryption exponents. Encryption applies modular exponentiation to plaintext blocks, while decryption inverts the operation using the private exponent via modular arithmetic.",
+      "is_synthetic": false,
+      "category": "Cybersecurity",
+      "generation_type": "real_domain_data",
+      "word_count": 72
+    },
+    {
+      "id": "REAL_SEC_02_ZeroKnowledge",
+      "title": "Zero-Knowledge Proofs and Succinct Non-Interactive Arguments",
+      "text": "Zero-knowledge proofs permit a prover to convince a verifier that a statement is true without revealing any auxiliary information beyond the validity of the statement itself. Completeness ensures honest provers convince verifiers, soundness prevents cheating provers from validating false statements, and zero-knowledge guarantees no computational leakage. Non-interactive zero-knowledge arguments of knowledge utilize polynomial commitments and elliptic curve pairings to verify complex computational transactions in blockchain protocols and privacy-preserving authentication.",
+      "is_synthetic": false,
+      "category": "Cybersecurity",
+      "generation_type": "real_domain_data",
+      "word_count": 69
+    },
+    {
+      "id": "REAL_SEC_03_BufferOverflow",
+      "title": "Memory Safety Vulnerabilities and Stack Buffer Overflows",
+      "text": "Buffer overflow vulnerabilities arise when a program writes data beyond the allocated boundary of a memory buffer. In stack-based buffer overflows, malicious input overwrites adjacent memory containing the saved frame pointer and function return address. When the function returns, control flow transfers to injected shellcode or existing executable code via return-oriented programming. Modern defensive mitigations incorporate address space layout randomization, non-executable stack segments, compiler stack canaries, and modern memory-safe programming languages.",
+      "is_synthetic": false,
+      "category": "Cybersecurity",
+      "generation_type": "real_domain_data",
+      "word_count": 71
+    },
+    {
+      "id": "REAL_SEC_04_TLS",
+      "title": "Transport Layer Security and Cryptographic Handshake Protocols",
+      "text": "Transport Layer Security secures end-to-end communication across the internet, guaranteeing confidentiality, authenticity, and message integrity. The TLS handshake establishes connection parameters, verifies digital certificates issued by trusted certificate authorities, and negotiates ephemeral symmetric cipher keys using Elliptic-Curve Diffie-Hellman key exchange. Symmetric authenticated encryption algorithms like AES-GCM protect transmitted application data, while cryptographic message authentication codes prevent replay and tampering attacks.",
+      "is_synthetic": false,
+      "category": "Cybersecurity",
+      "generation_type": "real_domain_data",
+      "word_count": 60
+    },
+    {
+      "id": "REAL_SEC_05_Blockchain",
+      "title": "Distributed Ledgers and Proof-of-Work Consensus Networks",
+      "text": "A blockchain is an immutable distributed ledger composed of cryptographically linked blocks. Each block header contains the cryptographic hash of the previous block, a timestamp, a transaction root hash computed via a Merkle tree, and a proof-of-work nonce. Miners compete to find a nonce that yields a SHA-256 block hash below the network target difficulty. This consensus mechanism prevents double-spending attacks and establishes Byzantine fault tolerance without a central authority.",
+      "is_synthetic": false,
+      "category": "Cybersecurity",
+      "generation_type": "real_domain_data",
+      "word_count": 70
+    },
+    {
+      "id": "REAL_SEC_06_IntrusionDetection",
+      "title": "Network Intrusion Detection and Anomaly Signature Analysis",
+      "text": "Network intrusion detection systems monitor packet telemetry and connection metadata to identify unauthorized access and cyber threats. Signature-based detection inspects payload patterns against known exploit fingerprints, providing high accuracy for established attacks. Anomaly-based detection leverages statistical profiling and unsupervised machine learning to detect deviations from baseline network traffic, flagging zero-day exploits, port scanning activity, and distributed denial-of-service volumetric surges.",
+      "is_synthetic": false,
+      "category": "Cybersecurity",
+      "generation_type": "real_domain_data",
+      "word_count": 59
+    },
+    {
+      "id": "REAL_PHYS_01_QuantumEntanglement",
+      "title": "Quantum Entanglement and Bell Inequality Violations",
+      "text": "Quantum entanglement describes composite physical systems whose quantum states cannot be factored into product states of individual subsystems. When entangled particles are separated across spacelike intervals, measurement of one particle instantaneously correlates with the measurement outcome of the other, defying local hidden-variable realism. Experimental tests of Bell inequalities using polarized photon pairs confirm quantum mechanical predictions, providing the operational basis for quantum key distribution, quantum teleportation, and fault-tolerant quantum computing architectures.",
+      "is_synthetic": false,
+      "category": "Physics",
+      "generation_type": "real_domain_data",
+      "word_count": 71
+    },
+    {
+      "id": "REAL_PHYS_02_BlackHoles",
+      "title": "Black Hole Thermodynamics and Hawking Radiation Dynamics",
+      "text": "Black hole thermodynamics establishes an exact mathematical isomorphism between gravitational physics and classical thermodynamics. The Bekenstein-Hawking entropy of an event horizon is proportional to its surface area measured in Planck units. Quantum field theory in curved spacetime demonstrates that virtual particle-antiparticle pairs near the horizon lead to particle emission known as Hawking radiation. As a black hole radiates thermal energy, its mass decreases, leading to the black hole information paradox regarding unitarity preservation during evaporation.",
+      "is_synthetic": false,
+      "category": "Physics",
+      "generation_type": "real_domain_data",
+      "word_count": 75
+    },
+    {
+      "id": "REAL_PHYS_03_GeneralRelativity",
+      "title": "Gravitational Waves and Spacetime Metric Curvature",
+      "text": "Einstein's field equations describe gravity not as an attractive force, but as the manifestation of spacetime curvature induced by mass-energy distributions. Compact binary inspirals of neutron stars and black holes generate quadrupole perturbations that propagate outward at the speed of light as gravitational waves. Laser interferometer detectors like LIGO and Virgo measure differential strain amplitudes on the order of ten to the minus twenty-one meters, opening gravitational wave astronomy.",
+      "is_synthetic": false,
+      "category": "Physics",
+      "generation_type": "real_domain_data",
+      "word_count": 69
+    },
+    {
+      "id": "REAL_PHYS_04_Superconductivity",
+      "title": "High-Temperature Superconductivity and Cooper Pair Condensation",
+      "text": "Superconductivity is characterized by the sudden disappearance of electrical resistance and the expulsion of magnetic flux fields via the Meissner effect. Conventional superconductors are explained by the BCS theory, where electron-phonon interactions produce attractive forces that bind electrons into Cooper pairs. These bosonic pairs condense into a macroscopic quantum ground state. High-temperature cuprate and nickelate superconductors operate beyond weak-coupling phonon mechanisms, involving strong electronic correlation and antiferromagnetic spin fluctuations.",
+      "is_synthetic": false,
+      "category": "Physics",
+      "generation_type": "real_domain_data",
+      "word_count": 69
+    },
+    {
+      "id": "REAL_PHYS_05_DarkMatter",
+      "title": "Cosmological Dark Matter and Gravitational Lensing Evidence",
+      "text": "Astrophysical observations across multiple scales indicate that baryonic matter constitutes only a fraction of total cosmic matter density. Galactic rotation curves remain flat at large radial distances from galactic centers, indicating massive non-luminous halos. Weak and strong gravitational lensing observations of colliding galaxy clusters, such as the Bullet Cluster, demonstrate separation between baryonic plasma and gravitational potential wells, supporting collisionless cold dark matter candidates.",
+      "is_synthetic": false,
+      "category": "Physics",
+      "generation_type": "real_domain_data",
+      "word_count": 64
+    },
+    {
+      "id": "REAL_PHYS_06_FusionEnergy",
+      "title": "Magnetic Confinement Fusion and Tokamak Plasma Stability",
+      "text": "Thermonuclear fusion seeks to replicate solar energy production by fusing hydrogen isotopes deuterium and tritium under temperatures exceeding one hundred million Kelvin. Magnetic confinement fusion uses helical magnetic fields in tokamak configurations to confine hot ionized plasma away from vacuum vessel walls. Key engineering and physics challenges involve suppressing magnetohydrodynamic instabilities, managing turbulent transport losses, and developing plasma-facing divertor materials.",
+      "is_synthetic": false,
+      "category": "Physics",
+      "generation_type": "real_domain_data",
+      "word_count": 60
+    },
+    {
+      "id": "REAL_BIO_01_CRISPR",
+      "title": "CRISPR-Cas9 Gene Editing and Targeted Molecular Cleavage",
+      "text": "The bacterial adaptive immune system CRISPR-Cas9 has been repurposed as a revolutionary RNA-guided endonuclease platform for precision genome editing. A single guide RNA directs the Cas9 endonuclease to a complementary genomic target sequence adjacent to a protospacer adjacent motif. Cas9 induces targeted double-strand breaks, triggering endogenous cellular DNA repair pathways. Non-homologous end joining introduces targeted knockouts, while homology-directed repair enables precise genetic insertions for therapeutic disease correction.",
+      "is_synthetic": false,
+      "category": "Biology",
+      "generation_type": "real_domain_data",
+      "word_count": 67
+    },
+    {
+      "id": "REAL_BIO_02_Photosynthesis",
+      "title": "Biochemical Mechanisms of Photosynthetic Electron Transport",
+      "text": "Oxygenic photosynthesis converts solar electromagnetic radiation into chemical energy stored in carbohydrate bonds. In thylakoid membranes, Photosystem II absorbs photons, driving water photolysis to release protons and oxygen gas. Electrons travel through an electron transport chain involving plastoquinone, the cytochrome b6f complex, and plastocyanin to Photosystem I. The generated proton gradient powers ATP synthase to synthesize ATP, while ferredoxin-NADP+ reductase produces NADPH for carbon fixation in the Calvin cycle.",
+      "is_synthetic": false,
+      "category": "Biology",
+      "generation_type": "real_domain_data",
+      "word_count": 69
+    },
+    {
+      "id": "REAL_BIO_03_mRNA_Vaccines",
+      "title": "Lipid Nanoparticle Delivery and mRNA Vaccine Mechanisms",
+      "text": "Messenger RNA vaccines introduce synthetic transcript sequences encoding viral antigens encapsulated within ionizable lipid nanoparticles. Nanoparticle formulations protect labile mRNA molecules from enzymatic ribonuclease degradation and facilitate endosomal escape into the host cell cytoplasm. Ribosomes translate the exogenous mRNA into target antigen proteins, which are presented on major histocompatibility complexes to activate neutralizing antibodies and cytotoxic T-cell immune responses.",
+      "is_synthetic": false,
+      "category": "Biology",
+      "generation_type": "real_domain_data",
+      "word_count": 59
+    },
+    {
+      "id": "REAL_BIO_04_Neuroplasticity",
+      "title": "Synaptic Plasticity and Long-Term Potentiation in Neurons",
+      "text": "Synaptic plasticity constitutes the primary cellular mechanism underlying learning and memory formation in mammalian nervous systems. Repetitive high-frequency stimulation of excitatory synapses induces long-term potentiation, characterized by persistent strengthening of synaptic transmission efficacy. Activation of NMDA receptors triggers calcium influx into dendritic spines, promoting trafficking and insertion of AMPA receptors into the postsynaptic density and structural remodeling of synaptic boutons.",
+      "is_synthetic": false,
+      "category": "Biology",
+      "generation_type": "real_domain_data",
+      "word_count": 60
+    },
+    {
+      "id": "REAL_BIO_05_Mitochondria",
+      "title": "Mitochondrial Oxidative Phosphorylation and ATP Synthesis",
+      "text": "Mitochondria are double-membraned cellular organelles responsible for generating adenosine triphosphate through oxidative phosphorylation. The citric acid cycle in the mitochondrial matrix yields high-energy electron carriers NADH and FADH2. Complexes I through IV in the inner mitochondrial membrane transfer electrons to molecular oxygen while pumping protons into the intermembrane space. The resulting electrochemical proton-motive force drives the rotary catalysis of ATP synthase to generate ATP from ADP and inorganic phosphate.",
+      "is_synthetic": false,
+      "category": "Biology",
+      "generation_type": "real_domain_data",
+      "word_count": 69
+    },
+    {
+      "id": "REAL_BIO_06_Microbiome",
+      "title": "The Human Gut Microbiome and Metabolic Immunomodulation",
+      "text": "The human gastrointestinal tract harbors complex microbial communities comprising trillions of bacterial, viral, and fungal cells. The gut microbiome performs essential physiological functions, including fermentation of non-digestible dietary fibers into short-chain fatty acids such as acetate, propionate, and butyrate. These metabolic byproducts regulate intestinal barrier integrity, modulate systemic immune cell maturation, and influence neural signaling pathways through the gut-brain axis.",
+      "is_synthetic": false,
+      "category": "Biology",
+      "generation_type": "real_domain_data",
+      "word_count": 60
+    },
+    {
+      "id": "REAL_ENV_01_CoralBleaching",
+      "title": "Thermal Stress and Coral Reef Bleaching Dynamics",
+      "text": "Coral reef ecosystems are exceptionally vulnerable to elevated sea surface temperatures driven by anthropogenic climate change. Sustained marine heatwaves cause physiological stress in scleractinian corals, disrupting symbiotic relationships with photosynthetic dinoflagellates of the family Symbiodiniaceae. Corals expel their algal symbionts, exposing white calcium carbonate skeletons in a process known as coral bleaching. Prolonged symbiont loss results in widespread coral mortality and biodiversity degradation.",
+      "is_synthetic": false,
+      "category": "Environmental Science",
+      "generation_type": "real_domain_data",
+      "word_count": 63
+    },
+    {
+      "id": "REAL_ENV_02_CarbonSinks",
+      "title": "Oceanic Carbon Sinks and Acidification Chemistry",
+      "text": "The global oceans act as critical carbon sinks, absorbing approximately one-quarter of anthropogenic carbon dioxide emissions. Dissolution of atmospheric carbon dioxide in seawater forms carbonic acid, which dissociates into hydrogen ions and bicarbonate. The increase in hydrogen ion concentration lowers ocean pH and decreases carbonate ion availability, hindering calcifying marine organisms from building calcium carbonate shells and structures.",
+      "is_synthetic": false,
+      "category": "Environmental Science",
+      "generation_type": "real_domain_data",
+      "word_count": 58
+    },
+    {
+      "id": "REAL_ENV_03_GlacialMelt",
+      "title": "Glacial Mass Balance and Cryosphere Sea-Level Contribution",
+      "text": "Global cryosphere decline is marked by accelerated mass loss across polar ice sheets and alpine glaciers. Satellite altimetry and gravimetry record negative mass balance in both the Greenland and Antarctic ice sheets. Surface meltwater lubrication at the ice-bed interface and ocean-induced basal melting beneath floating ice shelves accelerate calving and ice discharge into oceans, driving global mean sea-level rise and threatening coastal ecosystems.",
+      "is_synthetic": false,
+      "category": "Environmental Science",
+      "generation_type": "real_domain_data",
+      "word_count": 63
+    },
+    {
+      "id": "REAL_ENV_04_RenewableEnergy",
+      "title": "Geothermal Energy Systems and Subsurface Thermodynamics",
+      "text": "Geothermal energy harnesses thermal energy stored in Earth's crust derived from radioactive decay of minerals and primordial planetary formation. Hydrothermal power plants extract steam and high-temperature pressurized brine from deep permeable reservoirs to drive turbines for base-load electricity generation. Enhanced geothermal systems engineer permeability in hot dry rock through hydraulic stimulation, expanding clean renewable energy potential while requiring careful monitoring of induced seismicity.",
+      "is_synthetic": false,
+      "category": "Environmental Science",
+      "generation_type": "real_domain_data",
+      "word_count": 63
+    },
+    {
+      "id": "REAL_ENV_05_ForestCanopies",
+      "title": "Tropical Rainforest Canopies and Terrestrial Carbon Cycling",
+      "text": "Tropical rainforest canopies represent hyper-diverse terrestrial strata regulating global hydrological and carbon cycles. Stratified foliage layers intercept solar radiation and precipitation, driving localized evapotranspiration and regional atmospheric moisture recycling. Massive above-ground biomass in mature tropical forests sequesters gigatons of carbon, while deforestation and drought risk converting tropical biomes from net carbon sinks into net atmospheric carbon sources.",
+      "is_synthetic": false,
+      "category": "Environmental Science",
+      "generation_type": "real_domain_data",
+      "word_count": 57
+    },
+    {
+      "id": "REAL_ENV_06_WaterSecurity",
+      "title": "Groundwater Aquifer Depletion and Hydrological Recharge",
+      "text": "Overexploitation of deep confined aquifers for agricultural irrigation exceeds natural recharge rates, threatening global freshwater security. Intensive borehole pumping lowers groundwater tables, reduces baseflow to rivers, and induces irreversible land subsidence through compaction of aquitard clay layers. Sustainable water resource governance requires managed aquifer recharge, spatial remote sensing of water storage anomalies via GRACE satellites, and precision drip irrigation technology.",
+      "is_synthetic": false,
+      "category": "Environmental Science",
+      "generation_type": "real_domain_data",
+      "word_count": 60
+    },
+    {
+      "id": "SYNTH_ZIPF_01",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.1)",
+      "text": "Vector coefficient data coefficient coefficient coefficient layer cluster partition vector regression coefficient coefficient computation. Coefficient theory bandwidth latency capacity theory bandwidth coefficient coefficient bandwidth parameter inference coefficient coefficient. Dynamic metric vector state frequency coefficient process tensor approximation cryptography state variable vector quantum. Algorithm coefficient sample bandwidth vector coefficient computation bandwidth latency vector vector attention bandwidth approximation. Regression bandwidth frequency coefficient signal approximation regression vector coefficient subspace metric estimate dynamic latency. Computation coefficient transduction sample coefficient coefficient bandwidth signal frequency coefficient signal vector consensus theory. Coefficient coefficient analysis signal coefficient dynamic consensus latency accuracy iteration coefficient coefficient coefficient coefficient. Vector coefficient vector system frequency coefficient theory hypothesis metric coefficient dynamic theory bandwidth network. Bandwidth coefficient bandwidth dynamic signal coefficient equation regression graph kernel signal representation coefficient approximation. Coefficient bandwidth coefficient frequency bandwidth transduction coefficient rate energy coefficient sample kernel coefficient latency.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 140
+    },
+    {
+      "id": "SYNTH_ZIPF_02",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.15)",
+      "text": "Variable variable computation variable variable hypothesis memory hypothesis sample sample memory complexity representation cluster. Information inference representation sample sample distribution signal variable matrix variable consensus concurrency variable signal. Threshold computation threshold complexity signal accuracy hypothesis representation variable cluster variable variable complexity variable. Variable variable variable variable dynamic variable variable variable consensus variable sample variable variable consensus. Variable variance signal concurrency sample vector consensus concurrency variable complexity regression threshold complexity measure. Variable complexity regression convergence consensus variable signal concurrency variable complexity topology variable variable variable. Dynamic complexity cluster attention variable concurrency variable dynamic consensus complexity computation space variable variable. Complexity complexity concurrency concurrency partition attention analysis hypothesis variable signal variable signal variable kernel. Complexity layer variable variable variable space system approximation signal variable variable variable kernel variable. Memory variable complexity threshold variable variable layer complexity variable collision network sample variable concurrency. Threshold variable concurrency approximation iteration system theory sample structure variable.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 150
+    },
+    {
+      "id": "SYNTH_ZIPF_03",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.2)",
+      "text": "Iteration measure index iteration iteration estimate correlation iteration parameter subspace parameter threshold transformation measure. Iteration iteration hypothesis complexity hypothesis index iteration graph iteration concurrency capacity cluster collision iteration. Iteration theory parameter iteration capacity feature index iteration iteration estimate sample iteration parameter iteration. Iteration measure parameter iteration attention representation capacity variance cluster iteration iteration measure index cluster. Index measure index concurrency index concurrency index sequence iteration bucket index sequence layer iteration. Iteration measure frequency iteration dimension index measure hypothesis iteration iteration iteration iteration parameter estimate. Sequence index iteration parameter iteration measure cluster iteration coefficient estimate iteration iteration iteration entropy. Iteration iteration index measure probability index approximation structure measure measure iteration iteration index sequence. Iteration parameter iteration energy estimate measure measure index measure algorithm index iteration parameter hash. Iteration cluster cryptography feature measure index concurrency iteration learning iteration estimate dynamic iteration index. Threshold concurrency index parameter state threshold correlation parameter coefficient iteration concurrency index optimization parameter. Measure cluster iteration index graph capacity.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 160
+    },
+    {
+      "id": "SYNTH_ZIPF_04",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.25)",
+      "text": "Space representation representation space space space information space quantum space variance capacity process equilibrium. Coefficient cluster transduction space space representation representation space space space collision space process sample. Space process space manifold space space process collision space space representation variable theory rate. Space variable rate space space space space space convergence process space bandwidth subspace sequence. Algorithm memory representation space capacity coefficient space rate theory function collision space space space. Bucket equilibrium sample sample transduction space theory consensus space representation transduction space transduction rate. Representation theory iteration collision space hypothesis space process space optimization space variance space representation. Representation optimization space space representation convergence space space process rate hypothesis function sample space. Theory capacity sample space tensor process representation matrix space sequence space regression space process. Theory subspace approximation representation theory feature space sequence representation coefficient collision space space cluster. Space process process approximation process function space theory space space space space sequence space. Representation representation space rate process correlation regression matrix hash correlation inference hypothesis space complexity. Transduction variance.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 170
+    },
+    {
+      "id": "SYNTH_ZIPF_05",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.3)",
+      "text": "Estimate attention concurrency concurrency capacity data manifold information probability component manifold concurrency space partition. Feature concurrency collision computation component concurrency concurrency complexity concurrency theory network manifold concurrency concurrency. Model theory theory concurrency attention concurrency concurrency manifold manifold theory network concurrency metric network. Metric concurrency metric concurrency concurrency theory network bandwidth component concurrency capacity theory concurrency index. Concurrency theory concurrency representation concurrency manifold graph network classification transformation topology concurrency correlation concurrency. Model concurrency concurrency concurrency concurrency consensus inference concurrency concurrency process concurrency threshold concurrency network. Network concurrency component concurrency concurrency concurrency manifold concurrency memory transduction concurrency layer kernel concurrency. Consensus concurrency vector collision manifold manifold manifold network concurrency concurrency coefficient state gradient dimension. Probability manifold concurrency concurrency network network concurrency concurrency manifold theory convergence theory manifold concurrency. Component component process component.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 130
+    },
+    {
+      "id": "SYNTH_ZIPF_06",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.35)",
+      "text": "Probability frequency estimate dynamic optimization cryptography estimate optimization inference sample inference distribution optimization variance. Energy correlation signal space dynamic correlation optimization process entropy correlation optimization subspace latency correlation. Optimization frequency frequency manifold process entropy frequency frequency optimization optimization entropy optimization optimization optimization. Regression probability optimization frequency cryptography frequency cryptography optimization cryptography optimization frequency optimization bucket system. Frequency cryptography frequency attention correlation frequency optimization probability optimization inference correlation cryptography optimization optimization. Optimization estimate network optimization optimization optimization probability frequency frequency optimization vector concurrency gradient energy. Theory frequency optimization optimization optimization state optimization cryptography vector optimization optimization optimization probability correlation. Probability rate optimization cryptography frequency entropy model frequency cryptography variable layer frequency frequency space. Frequency correlation optimization optimization optimization entropy frequency optimization quantum optimization frequency correlation energy probability. Optimization correlation optimization frequency theory optimization optimization optimization optimization correlation parameter optimization distribution cryptography.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 140
+    },
+    {
+      "id": "SYNTH_ZIPF_07",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.05)",
+      "text": "Energy topology energy algorithm classification state residual space residual estimate threshold estimate classification optimization. Classification regression algorithm convergence energy energy layer estimate signal dimension transduction space energy quantum. Structure representation residual inference estimate energy transduction feature transformation energy energy partition energy gradient. State energy theory structure classification energy algorithm energy energy energy estimate measure representation algorithm. Energy energy estimate energy transformation transformation energy topology classification vector residual latency latency classification. Structure residual partition energy residual collision convergence layer energy consensus energy classification cryptography energy. Feature energy parameter energy residual state energy transformation hypothesis distribution residual consensus representation state. Residual energy residual residual latency latency index distribution representation residual hypothesis residual energy distribution. Classification residual bucket measure partition representation computation residual feature correlation component energy gradient estimate. Representation memory learning state function transformation energy residual system estimate estimate attention state energy. Classification metric rate gradient distribution energy bandwidth theory residual transformation.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 150
+    },
+    {
+      "id": "SYNTH_ZIPF_08",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.1)",
+      "text": "Classification classification estimate tensor classification classification transduction quantum classification classification topology sample bandwidth classification. Correlation dimension classification computation classification consensus bucket matrix bucket dimension rate manifold layer space. Consensus classification classification concurrency estimate analysis consensus consensus regression dimension bandwidth concurrency consensus layer. Frequency classification theory sequence consensus estimate layer classification classification system signal classification classification concurrency. Concurrency feature estimate classification rate concurrency classification equation concurrency concurrency transduction bucket topology classification. Accuracy equation transduction metric optimization layer data residual consensus consensus structure classification classification concurrency. Energy bandwidth estimate dimension classification classification kernel tensor classification sample dimension dimension classification bandwidth. Process convergence consensus information accuracy consensus topology concurrency graph energy concurrency consensus threshold rate. Classification classification measure bandwidth topology transduction entropy consensus layer classification threshold concurrency classification metric. Classification consensus measure parameter consensus classification classification graph bucket classification bucket transduction classification dimension. Classification sample kernel sample transduction concurrency system metric dimension cryptography classification bandwidth consensus threshold. Dimension consensus analysis consensus dimension energy.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 160
+    },
+    {
+      "id": "SYNTH_ZIPF_09",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.15)",
+      "text": "Energy layer dynamic probability layer probability data variance energy variance network network computation component. Variance computation layer classification information attention gradient dynamic distribution variance variance sample model layer. Layer dynamic variance graph probability hash layer layer layer transduction classification consensus sample index. Variance metric model layer manifold cryptography sample energy layer equation probability model bandwidth process. Feature layer variance layer variance variance variance optimization variance dynamic variance space transduction variance. Transduction layer layer measure layer probability layer component variance component dynamic variance sample probability. Dimension layer energy layer layer information layer theory variance transduction variance topology variance layer. Representation transduction coefficient energy optimization layer sample probability vector variance energy inference variance variance. Dimension probability transduction component sample variance entropy matrix signal hash computation variance manifold entropy. Computation variance manifold layer energy variance variance variance probability representation variance variance information variance. Variance entropy layer correlation probability rate variance transduction dynamic quantum variance variance cryptography metric. Layer sample variance probability structure variance attention measure variance model component variance classification layer. Variance coefficient.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 170
+    },
+    {
+      "id": "SYNTH_ZIPF_10",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.2)",
+      "text": "Collision energy component function inference residual inference inference inference inference inference energy energy sample. Hypothesis theory component coefficient component network inference tensor coefficient energy variable component energy inference. Energy inference inference sample variance inference component component system inference energy vector tensor inference. Inference component energy inference coefficient component concurrency inference sample function inference learning concurrency energy. Energy component layer inference component theory latency parameter cluster coefficient inference cluster component inference. Inference learning coefficient tensor inference component analysis bandwidth energy coefficient component concurrency energy function. Sample energy estimate inference inference coefficient theory measure component component component concurrency concurrency inference. Coefficient inference signal concurrency inference inference collision component inference energy component tensor hash inference. State sample sample inference energy inference inference component energy sample inference classification energy variable. Signal concurrency sample component.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 130
+    },
+    {
+      "id": "SYNTH_ZIPF_11",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.25)",
+      "text": "Equilibrium threshold entropy collision regression variance representation equilibrium equilibrium equilibrium threshold equilibrium equilibrium equilibrium. Feature data equilibrium equilibrium equilibrium entropy sample equilibrium equilibrium regression regression sample equilibrium equilibrium. Graph model signal equilibrium consensus learning feature energy equilibrium data equilibrium sequence equilibrium regression. Entropy representation data equilibrium tensor equilibrium equilibrium variable equilibrium equilibrium threshold hypothesis vector analysis. Equilibrium inference analysis equilibrium graph equilibrium entropy inference regression process equilibrium inference vector state. Entropy representation equilibrium feature equilibrium equilibrium information equilibrium entropy entropy equilibrium equilibrium representation regression. Inference entropy entropy entropy representation regression consensus tensor system cryptography metric data vector equilibrium. Entropy representation iteration inference collision equilibrium hypothesis equilibrium representation equilibrium equilibrium regression entropy equilibrium. Equilibrium regression feature signal regression regression equilibrium entropy gradient concurrency representation equilibrium threshold equilibrium. Consensus feature state equilibrium representation equilibrium representation equilibrium representation equilibrium consensus data entropy threshold.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 140
+    },
+    {
+      "id": "SYNTH_ZIPF_12",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.3)",
+      "text": "Structure iteration cluster cluster cluster vector cluster cluster parameter component parameter cluster cluster consensus. Probability concurrency structure space cluster cluster cluster cluster equilibrium structure cluster cluster tensor cluster. Cluster cluster component structure cluster cluster representation hash cryptography optimization cluster cluster dimension cluster. Algorithm cluster component layer dynamic cryptography parameter iteration entropy structure cluster cluster cluster cluster. Structure iteration cluster cluster cluster cluster cluster topology cluster cluster structure structure component variable. Cluster algorithm equilibrium gradient concurrency function cryptography concurrency cluster cluster concurrency cluster cluster cluster. Variance cluster cluster dimension cryptography component structure iteration bandwidth cluster cluster transformation cluster cluster. Structure cluster model cluster theory structure bandwidth entropy threshold cluster structure parameter variable structure. Information component cluster concurrency structure data component structure cluster cluster component cluster cluster cluster. Structure cluster cluster network cluster component structure cluster cluster parameter approximation cluster iteration concurrency. Metric component cryptography approximation cluster component cluster cluster concurrency parameter.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 150
+    },
+    {
+      "id": "SYNTH_ZIPF_13",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.35)",
+      "text": "Probability cryptography threshold cryptography classification consensus index data probability analysis index sample algorithm sample. Probability classification probability bucket probability probability probability layer bucket classification information classification probability correlation. Manifold structure probability probability classification probability probability gradient classification information gradient classification complexity classification. Probability hypothesis learning gradient gradient probability probability information cryptography analysis matrix function probability probability. Convergence analysis probability probability sample classification probability information data function probability classification probability tensor. Probability probability algorithm classification information rate classification probability probability information classification parameter gradient probability. Probability equation parameter classification concurrency information probability probability analysis gradient classification probability equation function. Topology analysis analysis feature algorithm analysis dimension probability analysis probability probability information cryptography classification. Classification classification sample probability probability classification information function gradient function probability parameter cryptography parameter. Cryptography classification function classification latency classification sample model probability probability information sample information probability. Probability parameter probability quantum probability classification probability cryptography probability probability index threshold probability equation. Information variance probability cryptography probability classification.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 160
+    },
+    {
+      "id": "SYNTH_ZIPF_14",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.05)",
+      "text": "Graph process measure correlation process quantum distribution process capacity process probability convergence topology process. Estimate tensor kernel quantum process bucket process process process correlation system process correlation correlation. Theory estimate bucket network theory vector capacity capacity process theory representation correlation correlation theory. Estimate process layer process bucket matrix representation process theory process dimension capacity regression process. Process theory bucket capacity theory feature convergence sequence probability convergence dimension process process theory. Capacity capacity partition process capacity transduction matrix estimate process theory theory process probability vector. Theory process computation convergence theory theory theory process consensus residual process iteration process process. Process data process sequence frequency process sequence theory memory capacity process process convergence algorithm. Process theory correlation information variance analysis process regression manifold process tensor tensor probability memory. Capacity process capacity convergence partition correlation capacity sequence concurrency distribution consensus optimization metric estimate. Vector correlation kernel analysis process dimension complexity process process process bucket bucket capacity tensor. Probability theory theory consensus process process theory consensus cryptography capacity equation variance variance probability. Correlation bandwidth.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 170
+    },
+    {
+      "id": "SYNTH_ZIPF_15",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.1)",
+      "text": "Sample probability transformation computation function collision vector transformation function collision function collision collision function. Quantum transformation function computation topology sequence vector collision network frequency collision function correlation function. Collision tensor feature collision model function function collision collision data collision function probability quantum. Equation function collision network learning collision probability collision dynamic memory collision collision cryptography function. Collision collision function correlation function collision latency correlation function probability vector collision computation inference. Layer quantum collision topology attention accuracy sample iteration function frequency collision bucket collision collision. Attention feature collision bucket collision index convergence probability function sample learning function probability estimate. Partition equation vector equation collision graph transformation feature network collision collision function collision sample. Collision theory collision equation equation computation function function collision sample collision dynamic function transduction. Probability data dynamic variance.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 130
+    },
+    {
+      "id": "SYNTH_ZIPF_16",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.15)",
+      "text": "Variable topology correlation theory collision topology data hash topology theory memory topology quantum equilibrium. Transduction transduction theory topology theory topology topology matrix theory function energy topology topology parameter. Model component topology partition inference index theory learning residual topology bandwidth gradient topology theory. Matrix transduction topology topology topology inference variable computation graph system memory process data memory. Theory transduction data consensus layer memory feature layer topology analysis iteration space representation topology. Inference parameter data hypothesis sample estimate theory bandwidth signal transduction topology partition transduction topology. Representation topology metric metric subspace convergence transduction theory representation space attention transduction computation structure. Topology iteration theory topology hash theory topology theory transduction equation topology parameter topology classification. Topology transduction kernel topology memory layer theory topology topology layer theory network topology correlation. Representation theory data transduction topology inference index topology data bucket gradient theory topology topology.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 140
+    },
+    {
+      "id": "SYNTH_ZIPF_17",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.2)",
+      "text": "Network network state consensus state consensus equilibrium consensus sample sequence consensus metric consensus accuracy. Concurrency structure consensus variance collision function consensus information consensus network layer equilibrium consensus consensus. Consensus equilibrium state consensus convergence variance bucket consensus consensus consensus network structure consensus structure. Consensus consensus space consensus consensus consensus consensus metric frequency sequence network representation consensus memory. Regression gradient graph metric graph consensus consensus rate network metric tensor consensus graph consensus. Variance consensus quantum consensus consensus variance consensus topology consensus information consensus representation transformation network. Consensus topology consensus consensus algorithm metric state component structure consensus consensus consensus consensus consensus. Consensus attention metric accuracy metric equilibrium metric cluster structure state structure consensus graph network. Latency network consensus consensus consensus rate metric consensus graph convergence gradient measure consensus capacity. Consensus structure structure component network computation network inference state gradient consensus network network consensus. Consensus metric transduction probability inference metric dimension structure consensus consensus.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 150
+    },
+    {
+      "id": "SYNTH_ZIPF_18",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.25)",
+      "text": "Partition sample sample learning sample learning information learning learning transduction entropy sample structure concurrency. Learning learning regression classification memory collision learning state cluster learning learning collision cluster topology. Information learning algorithm equilibrium space space entropy learning space consensus cluster learning cluster sample. Sample space process learning regression cluster component learning hypothesis collision learning cluster gradient classification. Space sample information classification sample quantum bucket classification learning hash learning space learning concurrency. Consensus cluster index structure cluster capacity learning sample learning space learning probability learning space. Convergence attention learning space equilibrium distribution information rate process collision learning consensus regression learning. Process learning learning space hypothesis quantum consensus tensor learning accuracy collision learning space learning. Space information learning accuracy learning learning sample space space cluster rate topology consensus learning. Space consensus learning learning convergence consensus space learning accuracy space space consensus learning information. Function manifold consensus cluster topology latency learning hypothesis space space learning cluster concurrency collision. Concurrency space analysis index space cluster.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 160
+    },
+    {
+      "id": "SYNTH_ZIPF_19",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.3)",
+      "text": "Matrix dynamic collision distribution component collision probability collision variance regression inference accuracy component network. Collision cryptography accuracy accuracy regression distribution distribution matrix residual matrix collision accuracy component capacity. Matrix network collision collision residual probability measure collision equilibrium measure dynamic computation collision matrix. Accuracy collision network collision dynamic component collision collision collision parameter matrix partition correlation inference. Distribution coefficient component accuracy coefficient matrix collision matrix collision attention parameter collision matrix tensor. Distribution energy collision feature model collision rate collision collision component dynamic matrix collision attention. Collision function function measure collision measure collision network accuracy theory matrix matrix measure matrix. Bucket theory matrix accuracy theory cryptography collision matrix collision component component matrix inference collision. Collision cryptography collision matrix layer accuracy matrix distribution distribution network graph collision collision graph. Collision process matrix equation process probability probability matrix matrix inference function matrix matrix collision. Cryptography correlation collision index collision accuracy latency matrix collision collision collision collision inference equation. Manifold collision variance collision coefficient collision matrix component equation component coefficient memory accuracy process. Coefficient component.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 170
+    },
+    {
+      "id": "SYNTH_ZIPF_20",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.35)",
+      "text": "Signal distribution computation graph quantum graph transformation graph correlation graph correlation graph graph graph. Convergence rate rate topology convergence distribution graph graph graph manifold graph graph learning quantum. Convergence quantum graph graph graph measure dynamic tensor correlation feature graph convergence correlation graph. Graph graph signal convergence graph graph correlation graph correlation system graph network cryptography graph. Network graph graph graph graph convergence graph bandwidth convergence convergence convergence graph classification kernel. Convergence convergence graph correlation graph correlation graph graph topology graph graph graph tensor graph. Bandwidth graph equilibrium convergence graph data graph capacity convergence topology convergence capacity equilibrium convergence. Graph convergence optimization graph graph graph topology rate graph tensor graph kernel bandwidth space. Graph convergence graph graph correlation graph convergence convergence tensor state graph graph graph graph. Graph kernel sequence cryptography.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 130
+    },
+    {
+      "id": "SYNTH_ZIPF_21",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.05)",
+      "text": "Approximation gradient approximation estimate probability hash dynamic signal coefficient graph bucket inference hypothesis approximation. Graph transduction graph graph transduction energy approximation dynamic layer representation hash probability energy energy. Data dynamic component analysis transduction theory algorithm energy network energy transduction memory data energy. Cryptography energy component sample collision probability energy transduction component coefficient metric probability partition gradient. Hash graph bandwidth energy estimate energy component latency approximation probability network approximation graph network. Regression energy accuracy dynamic probability energy cryptography approximation convergence dynamic distribution energy energy coefficient. Metric algorithm learning cryptography distribution energy dynamic probability graph approximation process parameter algorithm parameter. Energy energy energy transduction approximation capacity system approximation approximation frequency energy graph data energy. Graph energy estimate signal partition topology estimate energy vector index distribution data energy matrix. Dynamic cluster gradient graph energy partition coefficient approximation measure transduction gradient network inference graph.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 140
+    },
+    {
+      "id": "SYNTH_ZIPF_22",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.1)",
+      "text": "Dimension regression function signal analysis measure energy vector learning regression quantum collision dynamic learning. Classification learning vector learning learning learning learning topology approximation matrix function network network learning. Frequency theory transformation optimization approximation learning latency analysis learning regression structure learning matrix matrix. Hypothesis learning approximation threshold rate learning learning learning analysis learning estimate analysis signal matrix. Learning learning classification regression frequency energy learning matrix manifold theory learning learning metric distribution. Learning approximation matrix transformation matrix capacity learning structure regression learning analysis complexity matrix regression. Energy analysis learning learning feature signal learning graph model analysis residual matrix learning threshold. Vector network analysis structure quantum regression coefficient network sample regression learning equation learning matrix. Representation gradient approximation transformation learning gradient correlation threshold regression learning matrix approximation parameter approximation. Learning probability matrix coefficient learning collision learning learning learning graph bandwidth threshold matrix approximation. Estimate iteration matrix network learning regression matrix computation regression theory.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 150
+    },
+    {
+      "id": "SYNTH_ZIPF_23",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.15)",
+      "text": "Correlation tensor capacity variable variable dimension accuracy dimension tensor entropy tensor variable dimension variable. Dimension variable hash dimension tensor dimension metric parameter state tensor accuracy tensor dimension model. Variable quantum cluster accuracy dimension tensor dimension information complexity variable cluster tensor cluster partition. Dimension accuracy dimension information variable coefficient bucket complexity matrix dimension quantum bucket accuracy cluster. Accuracy dimension learning learning dimension accuracy tensor dimension state dimension dimension dimension cluster dimension. Transformation learning dimension tensor tensor graph capacity accuracy residual dimension dimension equilibrium dimension optimization. Gradient accuracy variable frequency learning variable accuracy accuracy dimension complexity accuracy dimension variable parameter. Dimension accuracy sample graph learning kernel cluster variable variable layer dimension variable dimension consensus. Dimension dimension accuracy dimension tensor subspace sequence tensor network dimension variable subspace variable cluster. Function variable variable model function learning residual probability concurrency layer threshold dimension dimension kernel. Coefficient residual hash model dimension kernel complexity index dimension subspace variable capacity accuracy matrix. Subspace function complexity quantum variable state.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 160
+    },
+    {
+      "id": "SYNTH_ZIPF_24",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.2)",
+      "text": "Approximation approximation vector manifold threshold approximation cluster cluster approximation approximation approximation approximation coefficient cluster. Cryptography component approximation approximation vector approximation capacity approximation structure structure approximation approximation hypothesis equation. Approximation vector equation structure cluster approximation hypothesis equilibrium variable approximation cluster function approximation structure. Component transformation equation vector iteration equilibrium cluster analysis approximation vector cluster complexity cluster correlation. Component cluster cluster optimization component equation approximation structure cluster approximation concurrency transduction sequence approximation. Equation computation cluster cluster approximation manifold vector vector variance approximation approximation cluster model approximation. Equilibrium probability theory kernel correlation cluster model approximation analysis approximation vector estimate approximation cluster. Residual structure approximation vector vector measure approximation approximation capacity cluster equation approximation feature vector. Equilibrium kernel approximation approximation approximation approximation cryptography approximation cluster approximation feature cluster concurrency vector. Model equation consensus approximation approximation iteration cluster cluster approximation cluster approximation hypothesis cluster manifold. Correlation approximation structure vector capacity bandwidth regression variance approximation equation approximation manifold equilibrium computation. Approximation structure cluster equation cluster equation correlation cluster measure coefficient vector vector transformation approximation. Model concurrency.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 170
+    },
+    {
+      "id": "SYNTH_ZIPF_25",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.25)",
+      "text": "Latency parameter transformation structure parameter latency latency latency latency cluster sample component hypothesis sample. Transformation parameter latency transformation metric latency sample index memory metric latency metric latency dynamic. Collision metric convergence hash metric latency iteration hypothesis sample latency hypothesis metric latency classification. Latency latency transformation metric latency parameter latency latency metric metric attention cryptography metric latency. Latency cluster latency latency latency latency metric hypothesis metric transformation sample latency latency latency. Metric layer latency hypothesis latency latency sample sample energy convergence latency latency metric equation. Metric topology latency hypothesis graph threshold latency latency metric manifold hash metric latency threshold. Metric parameter hypothesis latency equation bandwidth transformation latency metric space transformation metric cluster metric. Feature consensus network transduction space latency latency parameter parameter transformation latency parameter latency parameter. Latency graph metric hypothesis.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 130
+    },
+    {
+      "id": "SYNTH_ZIPF_26",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.3)",
+      "text": "Cluster dynamic optimization entropy optimization feature space dimension attention frequency optimization optimization correlation optimization. Optimization state concurrency optimization hypothesis consensus optimization optimization model optimization optimization dynamic metric frequency. Optimization hypothesis frequency cluster entropy cluster model bandwidth cluster latency dynamic regression optimization optimization. Concurrency frequency tensor frequency energy optimization optimization optimization optimization subspace feature concurrency frequency entropy. Optimization sample entropy quantum frequency optimization tensor entropy optimization optimization optimization concurrency bandwidth latency. Structure frequency structure energy cluster energy latency frequency representation optimization quantum frequency optimization frequency. Frequency distribution partition quantum optimization concurrency convergence latency tensor optimization concurrency optimization concurrency complexity. Cluster optimization structure concurrency accuracy optimization frequency frequency entropy entropy optimization optimization optimization entropy. Entropy approximation partition variable distribution entropy concurrency optimization distribution structure optimization consensus optimization optimization. Complexity optimization network optimization optimization optimization frequency optimization graph optimization dynamic cluster concurrency entropy.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 140
+    },
+    {
+      "id": "SYNTH_ZIPF_27",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.35)",
+      "text": "Equilibrium equilibrium gradient iteration network transduction equilibrium network matrix transduction network equilibrium equilibrium gradient. Analysis equilibrium transduction equilibrium vector equilibrium vector equilibrium transduction network coefficient probability transduction network. Vector graph gradient gradient transformation vector equilibrium gradient transduction gradient representation transduction function equilibrium. Transduction transduction equilibrium equilibrium equilibrium iteration consensus index equilibrium vector representation concurrency equilibrium dimension. Tensor equilibrium graph index equilibrium equilibrium tensor coefficient coefficient vector tensor equilibrium equilibrium network. Network network transduction transduction equilibrium hash equilibrium equilibrium equilibrium gradient transduction network equilibrium network. Transduction network coefficient hypothesis function equilibrium probability graph bucket equilibrium energy equilibrium hash gradient. Equilibrium index equilibrium equilibrium index transduction equilibrium network transduction network iteration coefficient iteration network. Equilibrium vector network distribution network tensor network function equilibrium tensor transduction probability equilibrium entropy. Equilibrium gradient network equilibrium tensor equilibrium function equilibrium equilibrium equilibrium gradient equilibrium capacity gradient. Hash component transduction residual network transduction manifold network gradient equilibrium.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 150
+    },
+    {
+      "id": "SYNTH_ZIPF_28",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.05)",
+      "text": "Measure probability computation sample computation parameter structure component computation probability coefficient bucket bucket rate. Computation latency system computation measure iteration coefficient energy kernel partition variable computation sample parameter. Computation bandwidth computation measure computation sample variance computation iteration attention measure measure energy concurrency. Complexity parameter analysis system computation computation measure computation computation sample measure latency gradient bandwidth. Rate latency algorithm subspace parameter computation dynamic parameter computation measure algorithm measure parameter concurrency. Computation parameter sample feature sample bucket bandwidth computation computation variance latency subspace analysis bandwidth. Component computation threshold sequence capacity bandwidth measure parameter computation parameter coefficient measure analysis bandwidth. Component measure parameter component energy graph computation computation network graph system component computation feature. Measure collision measure bandwidth parameter analysis information complexity measure variable analysis coefficient energy topology. Sample component sequence sequence measure measure parameter parameter system estimate computation computation energy regression. Computation measure system dimension bandwidth cluster probability computation computation estimate inference rate computation topology. Approximation bandwidth computation sample analysis measure.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 160
+    },
+    {
+      "id": "SYNTH_ZIPF_29",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.1)",
+      "text": "Consensus consensus hash accuracy manifold sample consensus hash latency manifold accuracy consensus model state. Network hash frequency consensus sample hash consensus consensus graph gradient consensus hash frequency consensus. Manifold variance gradient sample cryptography algorithm latency consensus hash consensus sample theory algorithm consensus. Model theory frequency classification model consensus transformation consensus hypothesis manifold feature algorithm consensus classification. Manifold theory sample sample consensus algorithm classification sample consensus hash signal manifold attention cryptography. Sample partition vector manifold hash classification algorithm consensus sample consensus algorithm sample iteration hash. Consensus energy bandwidth algorithm attention consensus cryptography manifold complexity sequence manifold memory algorithm consensus. Algorithm quantum consensus consensus manifold signal model gradient space topology sequence classification consensus attention. Accuracy transformation attention layer consensus manifold consensus classification consensus frequency consensus gradient entropy accuracy. Consensus sample signal consensus signal accuracy consensus bandwidth feature consensus optimization classification sample energy. Consensus classification sample consensus classification latency variance theory hash hash space analysis consensus consensus. Consensus consensus sequence attention attention consensus theory hash algorithm classification consensus concurrency hash attention. Transformation hash.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 170
+    },
+    {
+      "id": "SYNTH_ZIPF_30",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.15)",
+      "text": "Signal equation equation equation concurrency bucket bucket concurrency bucket distribution variable signal index data. Equation concurrency information signal correlation equation attention partition accuracy space bucket topology learning subspace. Metric concurrency probability signal state correlation collision signal equation bucket data signal data concurrency. Data bucket data kernel state concurrency metric concurrency memory equation partition entropy equation signal. Concurrency state transduction measure space equation data signal bucket learning equation concurrency concurrency equation. Equation probability concurrency equation concurrency hash equation subspace inference metric bucket subspace equation state. Correlation dynamic bucket data kernel graph vector concurrency approximation equation graph variance optimization concurrency. Concurrency state concurrency threshold partition concurrency concurrency vector concurrency equation partition inference data signal. Equation accuracy concurrency memory sequence equation variable kernel concurrency signal equation accuracy variable model. Concurrency information concurrency concurrency.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 130
+    },
+    {
+      "id": "SYNTH_ZIPF_31",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.2)",
+      "text": "System index learning learning system index concurrency correlation feature layer feature matrix system system. Correlation index system attention cluster system learning topology index correlation system topology matrix feature. Index estimate iteration feature sequence feature learning system feature learning system consensus computation manifold. Learning system feature system learning index system capacity vector distribution feature measure system feature. Correlation feature threshold learning system system system measure system feature memory system index vector. System rate memory cluster system feature system system system theory computation system variance learning. Memory feature entropy system system learning layer feature dynamic feature graph index parameter correlation. System system feature threshold index layer system cryptography feature system system system system system. System measure sample feature metric graph convergence feature algorithm system feature parameter index bandwidth. Index layer system feature iteration representation matrix learning concurrency signal feature feature index index.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 140
+    },
+    {
+      "id": "SYNTH_ZIPF_32",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.25)",
+      "text": "Inference inference inference transduction function inference kernel inference collision matrix function process cluster inference. Information inference cluster inference theory inference inference inference cluster collision collision collision graph function. Function inference tensor computation collision inference manifold inference inference tensor information tensor equilibrium inference. Inference function information inference function residual inference inference signal inference concurrency equilibrium inference hypothesis. Tensor function collision equilibrium inference inference hash collision equilibrium approximation graph inference inference inference. Concurrency function inference inference function inference probability inference collision inference inference inference partition system. Tensor computation function collision capacity accuracy memory function inference inference inference computation information computation. Function collision equilibrium inference inference function inference function network residual memory inference inference layer. Graph collision tensor inference function inference inference function inference function inference iteration collision equation. Inference inference function data inference inference collision inference classification collision residual sequence function graph. Collision computation inference inference function inference cluster accuracy inference inference.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 150
+    },
+    {
+      "id": "SYNTH_ZIPF_33",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.3)",
+      "text": "Graph equilibrium bandwidth graph manifold analysis graph graph analysis graph graph graph parameter equilibrium. Graph graph probability graph graph variance network network graph network graph system state graph. Equilibrium graph transduction data accuracy graph analysis variance optimization parameter parameter analysis process graph. Graph component analysis graph concurrency graph residual equilibrium hash hash graph state regression bucket. Graph parameter graph network graph convergence graph graph graph learning vector graph representation analysis. Iteration graph graph manifold graph graph network variance energy parameter analysis state graph graph. Graph equilibrium graph equilibrium graph quantum analysis data equilibrium graph graph graph graph subspace. Graph parameter concurrency graph parameter network graph bandwidth graph representation bandwidth analysis regression parameter. Network graph graph system analysis graph graph graph graph graph state graph graph equilibrium. Graph graph analysis estimate equilibrium graph network cryptography equilibrium graph parameter subspace analysis graph. Graph variance equilibrium equilibrium graph graph equilibrium graph parameter graph graph iteration parameter equilibrium. Consensus equilibrium graph parameter graph equilibrium.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 160
+    },
+    {
+      "id": "SYNTH_ZIPF_34",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.35)",
+      "text": "Equation equation data equation data model approximation entropy approximation equation rate frequency learning equation. Component equation dimension learning rate data equation equation correlation equation equation data dimension equation. Data learning metric data learning accuracy regression equation equation equation equation coefficient learning equation. Representation theory equation theory equation computation approximation computation metric equation data accuracy accuracy equation. Equilibrium equation learning data approximation learning learning equation equation residual equation theory representation equation. Metric equation metric learning equation data frequency equation rate theory model equation accuracy theory. Function approximation learning model equation dimension equation consensus data equation equation equation equation learning. Variable equation metric equation variable accuracy equation equation equation residual feature equation dimension entropy. Data data data equation equation dimension accuracy metric dimension coefficient equation consensus frequency data. Equation representation learning convergence latency cryptography space entropy feature theory frequency equation data collision. Data equation equation equation accuracy model equation equation learning equation data equation data correlation. Sequence accuracy accuracy data dimension learning convergence representation theory equation entropy matrix accuracy space. Equation theory.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 170
+    },
+    {
+      "id": "SYNTH_ZIPF_35",
+      "title": "Zipfian Power-Law Synthetic Distribution (alpha=1.05)",
+      "text": "Subspace equation energy iteration iteration iteration iteration data dynamic information cluster correlation theory theory. Dynamic threshold data sequence sample bucket iteration space coefficient dynamic collision cryptography distribution cluster. Probability energy dimension sample variable data data sequence probability iteration iteration iteration data iteration. Dynamic complexity regression sequence entropy manifold manifold subspace cluster probability iteration hash collision theory. Data iteration process dynamic probability equation energy iteration iteration iteration iteration hypothesis representation metric. Theory dynamic dynamic iteration theory regression memory collision data correlation dynamic residual data approximation. Transduction residual distribution iteration estimate dynamic energy metric energy energy capacity energy collision memory. Iteration dynamic metric memory classification vector partition dynamic sequence graph dynamic data iteration regression. Data iteration iteration dynamic iteration iteration probability cluster iteration iteration metric variance estimate process. Sequence iteration iteration sequence.",
+      "is_synthetic": true,
+      "category": "Synthetic (Zipfian Power-Law)",
+      "generation_type": "synthetic_zipfian_power_law",
+      "word_count": 130
+    },
+    {
+      "id": "SYNTH_PERTURB_01",
+      "title": "Synthetic Calibrated Variant of REAL_CS_01_ResNet (Target J~95%)",
+      "text": "Deeper neural networks are more difficult to train. We present a residual learning framework to ease the training of networks that are substantially deeper than those used previously. We explicitly reformulate the layers as learning residual functions with reference to the layer inputs, instead of learning unreferenced functions. Comprehensive empirical evidence shows that these residual networks are easier to optimize and can gain accuracy from latency increased depth. learning the ImageNet dataset we evaluate residual nets with a depth of up to one hundred and fifty-two layers, which are eight times deeper than VGG nets but still attention lower computational complexity. An ensemble of these residual nets achieves error on the ImageNet test set, winning first place in the classification task.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 95% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_CS_01_ResNet",
+      "target_similarity": 0.95,
+      "word_count": 121
+    },
+    {
+      "id": "SYNTH_PERTURB_02",
+      "title": "Synthetic Calibrated Variant of REAL_CS_02_Transformer (Target J~95%)",
+      "text": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks in an encoder-decoder configuration. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions data Experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. The model achieves state of the art results on English to German component English to French translation.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 95% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_CS_02_Transformer",
+      "target_similarity": 0.95,
+      "word_count": 94
+    },
+    {
+      "id": "SYNTH_PERTURB_03",
+      "title": "Synthetic Calibrated Variant of REAL_CS_03_GCN (Target J~95%)",
+      "text": "We present a scalable approach for semi-supervised learning state graph-structured data. It is based on an efficient variant of convolutional neural networks which operate directly on graphs. We motivate the choice of our convolutional architecture via a localized first-order approximation of spectral graph convolutions. Our model scales linearly in the number of graph edges and learns hidden layer representations that encode both local graph structure and features of nodes. In several experiments on citation networks and a knowledge graph dataset, we demonstrate that our approach outperforms related methods by a significant inference",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 95% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_CS_03_GCN",
+      "target_similarity": 0.95,
+      "word_count": 92
+    },
+    {
+      "id": "SYNTH_PERTURB_04",
+      "title": "Synthetic Calibrated Variant of REAL_CS_04_Paxos (Target J~95%)",
+      "text": "The Paxos protocol guarantees safety in asynchronous distributed systems with crash-stop or crash-recovery fault models. Consensus is achieved through rounds of proposals, where proposers request promises from a quorum of acceptors before committing values. By decoupling the leader election phase from the replicated state machine log execution, concurrency enables high-throughput state machine replication. Practical deployments such as Google Chubby and Apache ZooKeeper adapt Paxos principles to handle network partitions, disk write latencies, and dynamic cluster membership reconfiguration.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 95% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_CS_04_Paxos",
+      "target_similarity": 0.95,
+      "word_count": 77
+    },
+    {
+      "id": "SYNTH_PERTURB_05",
+      "title": "Synthetic Calibrated Variant of REAL_CS_05_LSH_MinHash (Target J~95%)",
+      "text": "Locality-Sensitive Hashing resolves the curse of dimensionality in high-dimensional nearest neighbor queries. By applying hash functions where collision probability is strictly proportional to the underlying metric similarity, sub-quadratic candidate filtering replaces exhaustive all-pairs brute-force comparison. For unweighted sets, Broder's MinHash preserves the classic Jaccard index. For weighted feature vectors and probability distributions, consistent weighted sampling and Ertl's ProbMinHash align hash collision probabilities directly with the measure Jaccard similarity.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 95% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_CS_05_LSH_MinHash",
+      "target_similarity": 0.95,
+      "word_count": 68
+    },
+    {
+      "id": "SYNTH_PERTURB_06",
+      "title": "Synthetic Calibrated Variant of REAL_CS_06_LinuxKernel (Target J~95%)",
+      "text": "Modern operating system kernels manage physical memory via multi-level page tables and virtual address translation. The Translation Lookaside Buffer caches virtual to physical address translations, minimizing hardware traversal penalties. theory paging loads pages into memory on demand when page faults occur. Page replacement policies, such as least recently used approximations and clock algorithms, balance working set retention against page thrashing. Copy-on-write optimizations defer page duplication until memory writes occur, optimizing process creation through fork.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 95% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_CS_06_LinuxKernel",
+      "target_similarity": 0.95,
+      "word_count": 74
+    },
+    {
+      "id": "SYNTH_PERTURB_07",
+      "title": "Synthetic Calibrated Variant of REAL_SEC_01_RSA (Target J~95%)",
+      "text": "Public-key cryptography enables secure communication over untrusted channels without prior shared secret keys. The RSA cryptosystem relies on the computational intractability of factoring large composite integers into prime factors. The key generation process selects two large prime numbers, computes their modulus and Euler totient function, and derives public encryption and private decryption exponents. Encryption applies modular exponentiation to plaintext space while decryption inverts the operation using the private exponent via modular arithmetic.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 95% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_SEC_01_RSA",
+      "target_similarity": 0.95,
+      "word_count": 72
+    },
+    {
+      "id": "SYNTH_PERTURB_08",
+      "title": "Synthetic Calibrated Variant of REAL_SEC_02_ZeroKnowledge (Target J~95%)",
+      "text": "Zero-knowledge proofs permit a prover to gradient a verifier that a statement is true without revealing any auxiliary information beyond the validity of the statement itself. Completeness ensures honest provers convince verifiers, soundness prevents cheating provers from validating false statements, and zero-knowledge guarantees no computational leakage. Non-interactive zero-knowledge arguments of knowledge utilize polynomial commitments and elliptic curve pairings to verify complex computational transactions in blockchain protocols and privacy-preserving authentication.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 95% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_SEC_02_ZeroKnowledge",
+      "target_similarity": 0.95,
+      "word_count": 69
+    },
+    {
+      "id": "SYNTH_PERTURB_09",
+      "title": "Synthetic Calibrated Variant of REAL_SEC_03_BufferOverflow (Target J~95%)",
+      "text": "Buffer overflow vulnerabilities arise when a program writes data beyond the allocated boundary of a memory buffer. In stack-based buffer overflows, malicious input overwrites adjacent memory containing the saved frame pointer and function return address. When the function returns, control flow transfers to injected shellcode or existing executable code via return-oriented programming. Modern defensive mitigations incorporate model space layout randomization, non-executable stack segments, compiler stack canaries, and modern memory-safe programming languages.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 95% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_SEC_03_BufferOverflow",
+      "target_similarity": 0.95,
+      "word_count": 71
+    },
+    {
+      "id": "SYNTH_PERTURB_10",
+      "title": "Synthetic Calibrated Variant of REAL_SEC_04_TLS (Target J~95%)",
+      "text": "Transport Layer Security secures end-to-end communication across the internet, guaranteeing confidentiality, authenticity, and correlation integrity. The TLS handshake establishes connection parameters, verifies digital certificates issued by trusted certificate authorities, and negotiates ephemeral symmetric cipher keys using Elliptic-Curve Diffie-Hellman key exchange. Symmetric authenticated encryption algorithms like AES-GCM protect transmitted application data, while cryptographic message authentication codes prevent replay and tampering attacks.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 95% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_SEC_04_TLS",
+      "target_similarity": 0.95,
+      "word_count": 60
+    },
+    {
+      "id": "SYNTH_PERTURB_11",
+      "title": "Synthetic Calibrated Variant of REAL_SEC_05_Blockchain (Target J~75%)",
+      "text": "A blockchain is an immutable distributed iteration composed of cryptographically linked analysis Each block header contains the cryptographic hash of the previous block, a timestamp, a transaction root hash computed via a energy tree, and a proof-of-work nonce. Miners gradient to variance a nonce that hash a SHA-256 block hash below topology distribution target difficulty. This consensus mechanism prevents double-spending attacks and estimate Byzantine fault tolerance without a kernel authority.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_SEC_05_Blockchain",
+      "target_similarity": 0.75,
+      "word_count": 70
+    },
+    {
+      "id": "SYNTH_PERTURB_12",
+      "title": "Synthetic Calibrated Variant of REAL_SEC_06_IntrusionDetection (Target J~75%)",
+      "text": "complexity intrusion detection systems monitor packet telemetry function connection metadata system identify unauthorized access and cyber threats. Signature-based detection inspects learning collision against known exploit fingerprints, providing high accuracy for established attacks. Anomaly-based detection leverages statistical profiling and unsupervised machine learning to detect deviations from baseline network traffic, flagging zero-day exploits, port analysis activity, and complexity data volumetric surges.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_SEC_06_IntrusionDetection",
+      "target_similarity": 0.75,
+      "word_count": 59
+    },
+    {
+      "id": "SYNTH_PERTURB_13",
+      "title": "Synthetic Calibrated Variant of REAL_PHYS_01_QuantumEntanglement (Target J~75%)",
+      "text": "transduction entanglement describes composite physical systems whose quantum hash cannot be factored graph variable states of gradient subsystems. When entangled particles are separated across spacelike intervals, measurement of one particle instantaneously correlates with the measurement outcome of component other, defying local hidden-variable realism. Experimental tests of Bell inequalities system regression photon pairs confirm quantum mechanical predictions, representation the operational basis for quantum key distribution, quantum teleportation, and fault-tolerant computation computing architectures.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_PHYS_01_QuantumEntanglement",
+      "target_similarity": 0.75,
+      "word_count": 71
+    },
+    {
+      "id": "SYNTH_PERTURB_14",
+      "title": "Synthetic Calibrated Variant of REAL_PHYS_02_BlackHoles (Target J~75%)",
+      "text": "Black hole thermodynamics establishes memory exact mathematical isomorphism between gravitational physics and classical thermodynamics. The Bekenstein-Hawking entropy of an event horizon is proportional to its surface area measured in Planck units. equation field theory in curved spacetime learning that model particle-antiparticle pairs cluster the horizon lead to matrix emission known as Hawking radiation. As a subspace hole radiates thermal energy, iteration component decreases, leading to the black hole information paradox regarding unitarity dynamic during evaporation.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_PHYS_02_BlackHoles",
+      "target_similarity": 0.75,
+      "word_count": 75
+    },
+    {
+      "id": "SYNTH_PERTURB_15",
+      "title": "Synthetic Calibrated Variant of REAL_PHYS_03_GeneralRelativity (Target J~75%)",
+      "text": "Einstein's field equations describe gravity not as an attractive force, but as the manifestation cryptography spacetime curvature process by mass-energy distributions. Compact binary inspirals of system stars and black holes generate hypothesis topology process propagate outward at the speed of light as gravitational waves. Laser interferometer detectors like LIGO and energy measure differential strain amplitudes on hash order of ten complexity the minus twenty-one meters, opening gravitational wave astronomy.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_PHYS_03_GeneralRelativity",
+      "target_similarity": 0.75,
+      "word_count": 69
+    },
+    {
+      "id": "SYNTH_PERTURB_16",
+      "title": "Synthetic Calibrated Variant of REAL_PHYS_04_Superconductivity (Target J~75%)",
+      "text": "Superconductivity topology characterized by residual sudden layer of electrical resistance and the expulsion of magnetic flux fields via the Meissner cryptography Conventional structure are explained by the BCS theory, where electron-phonon interactions produce attractive equilibrium that coefficient electrons into accuracy pairs. These bosonic pairs condense into a macroscopic quantum ground state. High-temperature cuprate and nickelate collision operate beyond weak-coupling phonon mechanisms, involving strong electronic correlation and antiferromagnetic spin fluctuations.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_PHYS_04_Superconductivity",
+      "target_similarity": 0.75,
+      "word_count": 69
+    },
+    {
+      "id": "SYNTH_PERTURB_17",
+      "title": "Synthetic Calibrated Variant of REAL_PHYS_05_DarkMatter (Target J~75%)",
+      "text": "Astrophysical observations across multiple scales indicate that baryonic consensus constitutes only theory fraction of total cosmic matter density. Galactic rotation curves remain flat at large radial distances from variable centers, energy massive non-luminous halos. component and strong gravitational lensing observations of colliding galaxy clusters, probability as the Bullet Cluster, bucket separation between baryonic plasma and gravitational tensor wells, supporting collisionless cold classification matter candidates.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_PHYS_05_DarkMatter",
+      "target_similarity": 0.75,
+      "word_count": 64
+    },
+    {
+      "id": "SYNTH_PERTURB_18",
+      "title": "Synthetic Calibrated Variant of REAL_PHYS_06_FusionEnergy (Target J~75%)",
+      "text": "Thermonuclear fusion seeks to replicate solar algorithm production by fusing hydrogen isotopes deuterium and complexity under temperatures exceeding one hundred million Kelvin. Magnetic coefficient fusion uses helical magnetic kernel in state configurations to energy hot ionized plasma away from vacuum vessel walls. Key engineering and physics challenges involve suppressing magnetohydrodynamic instabilities, managing turbulent transport losses, equilibrium developing plasma-facing metric materials.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_PHYS_06_FusionEnergy",
+      "target_similarity": 0.75,
+      "word_count": 60
+    },
+    {
+      "id": "SYNTH_PERTURB_19",
+      "title": "Synthetic Calibrated Variant of REAL_BIO_01_CRISPR (Target J~75%)",
+      "text": "The bacterial adaptive immune system CRISPR-Cas9 has entropy repurposed as a revolutionary RNA-guided endonuclease platform for probability genome editing. A single system RNA directs the Cas9 endonuclease to a complementary matrix target sequence adjacent to process protospacer theory motif. Cas9 induces targeted double-strand breaks, triggering endogenous cellular DNA repair pathways. Non-homologous end joining introduces targeted knockouts, while gradient repair enables precise signal insertions for therapeutic disease sequence",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_BIO_01_CRISPR",
+      "target_similarity": 0.75,
+      "word_count": 67
+    },
+    {
+      "id": "SYNTH_PERTURB_20",
+      "title": "Synthetic Calibrated Variant of REAL_BIO_02_Photosynthesis (Target J~75%)",
+      "text": "Oxygenic photosynthesis converts solar electromagnetic radiation into chemical energy stored in carbohydrate convergence In thylakoid membranes, quantum II absorbs photons, frequency water photolysis to release protons and oxygen gas. Electrons travel through an electron transport chain involving plastoquinone, the cytochrome b6f complex, and plastocyanin to Photosystem approximation The generated proton regression powers ATP measure to synthesize attention while ferredoxin-NADP+ reductase produces NADPH for carbon fixation feature computation Calvin cycle.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_BIO_02_Photosynthesis",
+      "target_similarity": 0.75,
+      "word_count": 69
+    },
+    {
+      "id": "SYNTH_PERTURB_21",
+      "title": "Synthetic Calibrated Variant of REAL_BIO_03_mRNA_Vaccines (Target J~75%)",
+      "text": "Messenger RNA vaccines introduce synthetic transcript sequences encoding viral antigens encapsulated within distribution algorithm nanoparticles. data formulations protect subspace mRNA molecules from enzymatic ribonuclease degradation and facilitate endosomal escape into the host cell cytoplasm. sequence translate the exogenous mRNA into target antigen proteins, which are presented estimate entropy histocompatibility complexes to variable neutralizing antibodies and cytotoxic T-cell immune responses.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_BIO_03_mRNA_Vaccines",
+      "target_similarity": 0.75,
+      "word_count": 59
+    },
+    {
+      "id": "SYNTH_PERTURB_22",
+      "title": "Synthetic Calibrated Variant of REAL_BIO_04_Neuroplasticity (Target J~75%)",
+      "text": "Synaptic complexity constitutes the complexity cellular mechanism underlying learning and memory formation in mammalian nervous systems. Repetitive consensus stimulation of excitatory synapses induces long-term entropy characterized by persistent strengthening of synaptic inference efficacy. Activation of NMDA receptors triggers calcium influx into state spines, promoting trafficking and insertion of AMPA receptors into the data density and structural metric of synaptic boutons.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_BIO_04_Neuroplasticity",
+      "target_similarity": 0.75,
+      "word_count": 60
+    },
+    {
+      "id": "SYNTH_PERTURB_23",
+      "title": "Synthetic Calibrated Variant of REAL_BIO_05_Mitochondria (Target J~75%)",
+      "text": "Mitochondria are tensor cellular organelles responsible for variance adenosine accuracy through oxidative variance algorithm citric acid cycle in the mitochondrial matrix yields high-energy electron carriers NADH kernel FADH2. Complexes I layer IV in the inner mitochondrial membrane transfer electrons to frequency oxygen while pumping protons into the intermembrane space. The resulting electrochemical proton-motive force drives the rotary catalysis of ATP synthase to generate ATP from ADP algorithm inorganic phosphate.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_BIO_05_Mitochondria",
+      "target_similarity": 0.75,
+      "word_count": 69
+    },
+    {
+      "id": "SYNTH_PERTURB_24",
+      "title": "Synthetic Calibrated Variant of REAL_BIO_06_Microbiome (Target J~75%)",
+      "text": "The human gastrointestinal vector harbors complex microbial communities comprising trillions of bacterial, estimate and fungal cells. The gut microbiome performs essential physiological functions, including fermentation bucket distribution dietary fibers into short-chain fatty acids such as transduction propionate, and butyrate. These metabolic byproducts regulate intestinal barrier regression modulate systemic immune cell maturation, and collision neural signaling pathways through model gut-brain axis.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_BIO_06_Microbiome",
+      "target_similarity": 0.75,
+      "word_count": 60
+    },
+    {
+      "id": "SYNTH_PERTURB_25",
+      "title": "Synthetic Calibrated Variant of REAL_ENV_01_CoralBleaching (Target J~75%)",
+      "text": "Coral reef ecosystems are optimization vulnerable partition elevated sea surface temperatures driven by anthropogenic climate change. Sustained marine heatwaves cause physiological stress collision scleractinian corals, layer bucket relationships tensor photosynthetic dinoflagellates of the family Symbiodiniaceae. Corals process their algal symbionts, exposing white calcium carbonate approximation in a process computation as coral bleaching. Prolonged symbiont loss results in widespread coral mortality and biodiversity degradation.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 75% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_ENV_01_CoralBleaching",
+      "target_similarity": 0.75,
+      "word_count": 63
+    },
+    {
+      "id": "SYNTH_PERTURB_26",
+      "title": "Synthetic Calibrated Variant of REAL_ENV_02_CarbonSinks (Target J~35%)",
+      "text": "The attention oceans act as subspace carbon sinks, cryptography transduction cluster sequence anthropogenic carbon information space classification of collision learning dioxide in seawater layer carbonic tensor dimension dissociates correlation hydrogen representation and bicarbonate. memory learning in gradient memory concentration lowers ocean pH and process carbonate ion algorithm subspace system marine organisms iteration building cryptography carbonate estimate and structures.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 35% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_ENV_02_CarbonSinks",
+      "target_similarity": 0.35,
+      "word_count": 58
+    },
+    {
+      "id": "SYNTH_PERTURB_27",
+      "title": "Synthetic Calibrated Variant of REAL_ENV_03_GlacialMelt (Target J~35%)",
+      "text": "coefficient iteration decline system marked sample entropy mass loss function polar ice sheets distribution frequency information Satellite altimetry partition gravimetry record negative equation balance in function regression residual and estimate energy sheets. Surface meltwater lubrication complexity the capacity hash and ocean-induced inference melting bandwidth classification system memory accelerate complexity state information discharge state oceans, driving global mean bucket analysis and threatening coastal ecosystems.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 35% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_ENV_03_GlacialMelt",
+      "target_similarity": 0.35,
+      "word_count": 63
+    },
+    {
+      "id": "SYNTH_PERTURB_28",
+      "title": "Synthetic Calibrated Variant of REAL_ENV_04_RenewableEnergy (Target J~35%)",
+      "text": "algorithm energy cryptography thermal energy distribution in Earth's crust derived from quantum decay signal topology bucket primordial system signal Hydrothermal power capacity structure learning partition high-temperature pressurized cryptography computation information permeable reservoirs to drive turbines transduction parameter electricity generation. collision geothermal computation engineer permeability convergence hot dry rock representation hydraulic representation vector clean regression energy frequency while model tensor memory of induced tensor",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 35% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_ENV_04_RenewableEnergy",
+      "target_similarity": 0.35,
+      "word_count": 63
+    },
+    {
+      "id": "SYNTH_PERTURB_29",
+      "title": "Synthetic Calibrated Variant of REAL_ENV_05_ForestCanopies (Target J~35%)",
+      "text": "vector rainforest canopies represent complexity collision strata component global hydrological and analysis cycles. dimension foliage transformation intercept function radiation analysis quantum driving learning evapotranspiration and index partition capacity recycling. Massive vector dynamic in topology tropical information sequesters attention of carbon, measure deforestation and drought risk converting tropical subspace residual net attention sinks kernel model atmospheric information model",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 35% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_ENV_05_ForestCanopies",
+      "target_similarity": 0.35,
+      "word_count": 57
+    },
+    {
+      "id": "SYNTH_PERTURB_30",
+      "title": "Synthetic Calibrated Variant of REAL_ENV_06_WaterSecurity (Target J~35%)",
+      "text": "Overexploitation frequency parameter confined aquifers representation agricultural irrigation probability natural system graph rate global freshwater security. Intensive residual pumping hash index concurrency distribution baseflow partition rivers, correlation algorithm irreversible land state process compaction frequency aquitard threshold layers. Sustainable water hash governance requires managed aquifer variable spatial sequence sensing of water accuracy anomalies via model kernel signal precision drip complexity dynamic",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 35% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_ENV_06_WaterSecurity",
+      "target_similarity": 0.35,
+      "word_count": 60
+    },
+    {
+      "id": "SYNTH_PERTURB_31",
+      "title": "Synthetic Calibrated Variant of REAL_CS_01_ResNet (Target J~35%)",
+      "text": "sample neural networks are more quantum to train. convergence present a residual learning hypothesis signal ease layer training of residual that dimension substantially deeper regression state used previously. We explicitly reformulate the layers distribution metric residual functions with probability manifold cryptography rate inputs, convergence variance manifold unreferenced classification process layer entropy cryptography partition subspace residual networks are easier to optimize approximation can matrix latency from considerably increased latency On the consensus dataset coefficient evaluate dimension topology subspace correlation attention rate up to component variance and fifty-two cluster which algorithm quantum threshold latency variance VGG nets but vector process parameter computational complexity. An sample of these rate nets achieves approximation equilibrium the ImageNet test set, winning first cluster bandwidth equation information computation",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 35% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_CS_01_ResNet",
+      "target_similarity": 0.35,
+      "word_count": 121
+    },
+    {
+      "id": "SYNTH_PERTURB_32",
+      "title": "Synthetic Calibrated Variant of REAL_CS_02_Transformer (Target J~35%)",
+      "text": "The frequency quantum transduction cryptography tensor based parameter complex recurrent bucket coefficient neural networks manifold hypothesis encoder-decoder bandwidth The iteration performing classification also iteration the encoder correlation decoder through complexity frequency complexity We propose algorithm new analysis network threshold the variable based layer dynamic variance mechanisms, dispensing representation component and convolutions entirely. latency on two convergence translation probability show these models to be attention distribution rate dynamic learning network parallelizable and network significantly dynamic variance to train. optimization model achieves latency collision the art results gradient graph collision German and English to consensus translation.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 35% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_CS_02_Transformer",
+      "target_similarity": 0.35,
+      "word_count": 94
+    },
+    {
+      "id": "SYNTH_PERTURB_33",
+      "title": "Synthetic Calibrated Variant of REAL_CS_03_GCN (Target J~35%)",
+      "text": "We present a scalable variable sequence semi-supervised learning on transformation space It matrix based topology memory efficient variant of parameter collision dynamic which operate directly on graphs. inference motivate concurrency choice of our convolutional attention via a kernel residual variable variable matrix cryptography convolutions. concurrency rate scales linearly energy the space of sequence dynamic variance learns variable network latency estimate structure both local graph structure and manifold information sample concurrency graph experiments transformation citation networks iteration a correlation graph latency we demonstrate that tensor classification outperforms related methods by structure hash margin.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 35% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_CS_03_GCN",
+      "target_similarity": 0.35,
+      "word_count": 92
+    },
+    {
+      "id": "SYNTH_PERTURB_34",
+      "title": "Synthetic Calibrated Variant of REAL_CS_04_Paxos (Target J~35%)",
+      "text": "coefficient computation protocol guarantees safety cluster asynchronous vector systems complexity crash-stop or crash-recovery quantum latency inference tensor space through rounds of proposals, index graph request promises learning data distribution of latency before energy values. By system the leader election parameter from residual replicated metric machine theory execution, sequence enables index information rate hypothesis optimization transduction such quantum Google data and cryptography ZooKeeper adapt process principles to cryptography network computation disk complexity latencies, and dynamic cluster hypothesis reconfiguration.",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 35% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_CS_04_Paxos",
+      "target_similarity": 0.35,
+      "word_count": 77
+    },
+    {
+      "id": "SYNTH_PERTURB_35",
+      "title": "Synthetic Calibrated Variant of REAL_CS_05_LSH_MinHash (Target J~35%)",
+      "text": "equilibrium Hashing resolves the curse correlation dimensionality in sequence concurrency variance queries. By sequence cluster functions correlation consensus probability layer strictly entropy subspace bucket underlying metric similarity, cryptography candidate layer equation exhaustive correlation brute-force comparison. concurrency vector energy Broder's MinHash parameter threshold gradient Jaccard index. For manifold feature vectors index probability distributions, inference collision sampling cryptography Ertl's ProbMinHash align hash collision probabilities kernel transformation cluster probability Jaccard layer",
+      "is_synthetic": true,
+      "category": "Synthetic (Calibrated 35% Variant)",
+      "generation_type": "synthetic_calibrated_perturbation",
+      "base_doc_id": "REAL_CS_05_LSH_MinHash",
+      "target_similarity": 0.35,
+      "word_count": 68
+    }
+  ]
+}

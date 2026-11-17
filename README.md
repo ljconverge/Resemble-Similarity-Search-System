@@ -1,136 +1,90 @@
-# Resemble: Similarity Search & Bucketing System
+# Resemble Similarity Search System
 
-An end-to-end near-duplicate text detection and document similarity search system combining:
-1. **Locality-Sensitive Hashing (LSH) & MinHash** with Carter-Wegman universal hashing for fast sub-quadratic candidate pruning.
-2. **Deterministic SHA-256 Modulo Bucketing (4 Buckets)** for balanced record partitioning and aggregate analytics.
-3. **Single-Page Application (SPA) & REST API** built with Flask and vanilla JavaScript for real-time, reload-free query retrieval and pairwise verification.
+Resemble is a Streamlit application for finding near-duplicate text documents. It compares an exhaustive brute-force baseline with a search pipeline that uses ProbMinHash and locality-sensitive hashing (LSH). The dashboard shows which matches LSH retrieved, which it missed, and how the two methods compare at a selected similarity threshold.
 
----
+## Quick start on Windows
 
-## Folder Layout
+1. **Extract the project ZIP.** In PyCharm, open the extracted folder containing `streamlit_app.py` and `requirements.txt`. Open the PyCharm terminal or a PowerShell window in that folder.
+2. **Check that Python 3.13 is installed.** The original project environment used this version.
 
-```text
-Resemble-Similarity-Search-System/
-├── app.py                      Flask application factory & REST API routes (/api/*)
-├── requirements.txt            Project dependencies
-├── .gitignore                  Git exclusions for Python caches, venv, and generated reports
-├── Algorithm/
-│   ├── lsh_engine.py           Core algorithm: text cleaning, shingling, MinHash (Carter-Wegman & notebook),
-│   │                           LSH banding, verification, brute force, evaluation, and interactive LSHEngine
-│   └── preprocessing.ipynb     Original reference notebook
-├── services/
-│   ├── __init__.py
-│   └── bucketing.py            Deterministic SHA-256 4-bucket modulo partitioning & metric aggregation
-├── Document/                   Bundled sample PDFs (Doc1.pdf to Doc10.pdf)
-├── templates/
-│   └── index.html              Unified Single-Page Application (SPA) console (tabs: Unified, 4-Bucket, Search, Performance)
-├── static/
-│   └── style.css               Optional external stylesheet
-├── tools/                      Stand-alone brute-force analysis & extraction utilities
-│   ├── brute_force_k1.py       Brute-force report for 1-word shingles
-│   ├── brute_force_k3.py       Brute-force report for 3-word shingles
-│   ├── brute_force_k9.py       Brute-force report for 9-word shingles
-│   ├── compare_k1_k3.py        k=1 vs k=3 comparative report
-│   ├── brute_force.py          General brute-force index
-│   ├── extract_books.py        Quality-checked PDF extraction with multi-backend & OCR fallback
-│   ├── document_loader.py      Multi-format loader (.pdf, .docx, .txt) preserving extensions
-│   └── text_quality.py         Quality classifier for extracted text
-└── tests/                      Automated test suites
-    ├── conftest.py             Test path configurations
-    ├── test_lsh_engine.py      MinHash, Carter-Wegman prime bound, LSH banding, and Jaccard tests
-    ├── test_bucketing_and_api.py SHA-256 bucketing service & Flask endpoint tests
-    ├── test_patches.py         Regression and edge-case boundary tests
-    └── test_tools_and_app.py   SPA and tool verification tests
+   ```powershell
+   py -3.13 --version
+   ```
+
+   If the Python launcher cannot find this version, install Python 3.13 and reopen the terminal. If your installation exposes Python 3.13 as `python`, you can use that command in the next step.
+
+3. **Create a virtual environment.**
+
+   ```powershell
+   py -3.13 -m venv .venv
+   ```
+
+4. **Install the project dependencies into that environment.**
+
+   ```powershell
+   .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+   ```
+
+   Streamlit provides the dashboard, pandas formats result tables, NumPy supports signature computation, and pypdf and python-docx extract text from PDF and Word files.
+
+5. **Start Streamlit.**
+
+   ```powershell
+   .\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+   ```
+
+6. **Open the Local URL** printed in the terminal, usually `http://localhost:8501`. Keep the terminal open while using the dashboard. Press **Ctrl+C** to stop it. For later launches, repeat step 5 from the project folder.
+
+## Using the dashboard
+
+| Mode | Workflow |
+| --- | --- |
+| Benchmark corpus | Choose an individual document to search the rest of the corpus, or choose **ALL** to evaluate all 4,950 unique pairs. Set the threshold and click **Compare documents**. Use **Show matches** to inspect all reference matches or only the matches LSH missed. |
+| Upload documents | Select at least two readable `.txt`, `.pdf`, or `.docx` files. Set the threshold and click **Compare uploads** to evaluate pairs among those files. PDF extraction reads up to the first 50 pages. Image-only scans may have no extractable text. |
+
+The bundled corpus contains 100 documents. Its dataset builder defines 30 source texts, 35 synthetic documents with Zipfian term frequencies, and 35 perturbed documents designed to introduce controlled overlap. The corpus and its manifest are stored in `data/`.
+
+## How a comparison runs
+
+1. **Load the text.** The app reads the bundled corpus or extracts text from the uploaded files. It builds and caches the benchmark indexes for reuse across comparisons.
+2. **Build term frequencies.** Preprocessing cleans and tokenizes the text, then converts each document into a weighted term distribution. Probability Jaccard similarity measures overlap between these distributions.
+3. **Compute the reference matches.** Brute force scores each eligible pair directly, or compares one selected document against the rest of the corpus in query mode. Pairs meeting the selected threshold form the reference match set.
+4. **Index and retrieve candidates.** ProbMinHash creates a 100-value signature for each document. LSH splits signatures into bands and groups matching bands into buckets. A shared bucket in at least one band makes a document or pair eligible for verification. The app selects 50 bands below 35%, 25 bands from 35% up to 60%, and 20 bands at 60% or above.
+5. **Verify the candidates.** The LSH pipeline computes exact Probability Jaccard similarity for the candidates it retrieves and applies the same threshold. It also reports the signature-based estimate. A qualifying pair can be missed if its signatures share no band.
+6. **Evaluate retrieval.** The app compares the LSH matches against the brute-force reference and displays timing, recall, and match status.
+
+## Reading the results
+
+- **Exact Similarity (BF)** is the Probability Jaccard score computed from term frequencies. **LSH Estimated Similarity** is based on the fraction of matching signature entries.
+- **Accuracy** in the dashboard is match recall. It measures the share of brute-force reference matches found by LSH.
+- **Missed by LSH** identifies reference matches absent from the LSH result. A pruned row has no displayed LSH estimate.
+- **Timing and speedup** are dashboard summaries. The LSH timing covers search after indexing. The app substitutes a fraction of the brute-force time when measured LSH search time is at least as high, so use raw algorithm timings for controlled performance measurements.
+
+## Repository guide
+
+| Path | Responsibility |
+| --- | --- |
+| `streamlit_app.py` | Dashboard, document extraction, and benchmark orchestration |
+| `Algorithm/preprocessing.py` | Text cleaning, term frequencies, and Probability Jaccard similarity |
+| `Algorithm/brute_force.py` | Exhaustive all-pairs search and single-document queries |
+| `Algorithm/probminhash.py` | Weighted signatures and similarity estimation |
+| `Algorithm/lsh.py` | Band indexing, candidate retrieval, and verification |
+| `Algorithm/evaluation.py` | Match evaluation and speedup calculations |
+| `services/dataset_service.py` | Corpus generation and loading |
+| `data/` | Bundled documents and dataset manifest |
+| `References/` | ProbMinHash research paper |
+| `tests/` | Unit tests for the corpus and search pipeline |
+
+## Run the tests
+
+After installing dependencies, run the test suite from the same project folder.
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests
 ```
 
----
+If the launch command cannot find `streamlit_app.py` or pip cannot find `requirements.txt`, check that your terminal is inside the extracted project folder. If uploads produce too little readable text, try plain-text files or PDFs with selectable text.
 
-## Quickstart & Commands
+## Reference
 
-### 1. Environment Setup
-```bash
-# Create and activate virtual environment
-python -m venv venv
-
-# Windows (PowerShell):
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\venv\Scripts\Activate.ps1
-
-# Windows (CMD):
-venv\Scripts\activate.bat
-
-# macOS / Linux:
-source venv/bin/activate
-
-# Install dependencies
-python -m pip install -r requirements.txt
-```
-
-### 2. Run the Web Application
-```bash
-python app.py
-```
-Open **`http://127.0.0.1:5000`** in your browser. The SPA console allows:
-- Running pairwise collection analysis on bundled PDFs or custom uploads.
-- Querying the indexed corpus asynchronously via `/api/search`.
-- Inspecting uniform record distribution across 4 modulo buckets with dynamic role/text filtering.
-
-### 3. Run Automated Tests
-```bash
-python -m pytest -q
-```
-
-### 4. CLI Execution
-```bash
-# Pairwise analysis on Document folder (3-word shingles, threshold 0.8, 20 bands):
-python Algorithm/lsh_engine.py Document --mode word --k 3 --threshold 0.8 --bands 20
-
-# Run character shingles with notebook MinHash method:
-python Algorithm/lsh_engine.py Document --mode char --k 9 --minhash notebook
-
-# Run standalone brute-force report:
-cd tools && python brute_force_k3.py ../Document
-```
-
----
-
-## System Architecture & Hashing Mechanics
-
-### 1. Carter-Wegman MinHash Universal Hashing
-For string shingle IDs $x \in [0, 2^{32}-1]$:
-$$h_i(x) = (a_i \cdot x + b_i) \pmod p$$
-- **Prime modulus:** $p = 2^{61} - 1$ (Mersenne prime $M_{61}$). Because $p \gg 2^{32}$, collisions prior to hash evaluation are mathematically eliminated.
-- **MinHash theorem:** $\Pr[\min h(A) = \min h(B)] = J(A, B)$.
-- Vectorized over shingle chunks with NumPy object arrays to avoid 64-bit integer overflow.
-
-### 2. LSH Banded Bucketing
-- The $m=100$ MinHash signature is split into $b$ bands of $r$ rows ($b \times r = 100$, e.g. $20 \times 5$).
-- Each band forms a bucket key `(band_index, tuple_of_rows)`.
-- Colliding documents become candidate pairs with collision probability:
-  $$P(\text{collision}) = 1 - (1 - s^r)^b$$
-- Exact Jaccard is only calculated for candidate pairs, eliminating up to $95\%+$ of non-matching comparisons.
-
-### 3. SHA-256 Modulo 4-Bucket Partitioning
-- Computes SHA-256 on composite key `"{id}:{name}"`.
-- Assigns bucket via `int(full_hash, 16) % 4` for uniform distribution.
-- Tracks truncated digests (`#hash[:12]`) and aggregate value summaries across roles and categories.
-
----
-
-## Settings Reference
-
-| Setting | Options | Description |
-|---|---|---|
-| **Threshold** | 0–100% | Applied with exact Jaccard verification after candidate generation |
-| **Bands** | 10, 20, 25, 50, 100 | Partitions the 100 hashes ($r = 100 / \text{bands}$) |
-| **Shingles** | `word` ($k=1\text{--}20$) or `char` ($k=1\text{--}30$) | Default is 3 words (phrases); character shingles capture sub-word overlap |
-| **MinHash** | `fast` or `notebook` | `fast` uses vectorized Carter-Wegman universal hashing; `notebook` uses seeded `mmh3` |
-
----
-
-## Performance Metrics Explained
-
-- **LSH time:** Shingle hashing + MinHash generation + banding + verification of candidate pairs.
-- **Brute-force time:** Exact Jaccard calculated across all $\frac{n(n-1)}{2}$ document pairs.
-- **Recall:** $\frac{\text{Pairs found by LSH}}{\text{True pairs found by Brute Force}}$.
-- **Speedup:** $\frac{\text{Brute-Force Time}}{\text{LSH Time}}$. As the document collection grows beyond small datasets, LSH scales near linearly ($O(n)$) compared to brute force's quadratic growth ($O(n^2)$).
+The search pipeline is based on Otmar Ertl’s [*ProbMinHash: A Class of Locality-Sensitive Hash Algorithms for the Probability Jaccard Similarity*](References/ProbMinHash__A_Class_of_Locality-Sensitive_Hash_Algorithms_for_the_Probability_Jaccard_Similarity.pdf). The paper is included in the repository.
