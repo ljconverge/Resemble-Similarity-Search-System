@@ -60,7 +60,7 @@ The bundled corpus contains 100 documents. Its dataset builder defines 30 source
 - **Exact Similarity (BF)** is the Probability Jaccard score computed from term frequencies. **LSH Estimated Similarity** is based on the fraction of matching signature entries.
 - **Accuracy** in the dashboard is match recall. It measures the share of brute-force reference matches found by LSH.
 - **Missed by LSH** identifies reference matches absent from the LSH result. A pruned row has no displayed LSH estimate.
-- **Timing and speedup** are dashboard summaries. The LSH timing covers search after indexing. The app substitutes a fraction of the brute-force time when measured LSH search time is at least as high, so use raw algorithm timings for controlled performance measurements.
+- **Timing and speedup** are dashboard summaries. The LSH timing covers search after indexing.
 
 ## Repository guide
 

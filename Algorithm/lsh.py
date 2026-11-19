@@ -1,11 +1,3 @@
-"""
-Algorithm/lsh.py
-================
-Locality-Sensitive Hashing (LSH) using Banding on ProbMinHash Signatures.
-Reuses ProbMinHasher and estimate_similarity directly from Algorithm.probminhash.
-Zero external algorithm libraries.
-"""
-
 from __future__ import annotations
 
 import time
@@ -17,13 +9,7 @@ from Algorithm.probminhash import ProbMinHasher, estimate_similarity
 
 
 class ProbMinHashLSH:
-    """Locality-Sensitive Hashing (LSH) Index using Banded ProbMinHash Signatures.
-
-      1. Hashes documents into m-dimensional integer signatures using ProbMinHasher.
-      2. Partitions the m hash values into b bands of r rows (m = b * r).
-      3. Any documents sharing the exact same bucket in >= 1 band are candidate pairs!
-      4. Verifies candidate pairs in O(1) time, avoiding exhaustive O(N^2) pairwise checks.
-    """
+    # Locality-Sensitive Hashing (LSH) Index using Banded ProbMinHash Signatures.
 
     def __init__(
         self,
@@ -44,12 +30,12 @@ class ProbMinHashLSH:
         self.shingle_mode = shingle_mode
         self.seed = seed
 
-        # Reuse ProbMinHasher directly from probminhash.py
+        # Reused ProbMinHasher from probminhash.py
         self.hasher = hasher or ProbMinHasher(num_hashes=self.num_hashes, seed=self.seed)
 
         # LSH Hash Tables: one dictionary per band
         self.buckets: List[Dict[Tuple[int, ...], Set[str]]] = [{} for _ in range(self.num_bands)]
-        # Track colliding buckets (>= 2 docs) for instant candidate pair retrieval
+        # Track colliding buckets (>= 2 docs) for fast candidate pair retrieval
         self.colliding_buckets: Set[Tuple[int, Tuple[int, ...]]] = set()
 
         self.documents: Dict[str, str] = {}
@@ -68,7 +54,9 @@ class ProbMinHashLSH:
         freqs: Optional[Dict[str, float]] = None,
         signature: Optional[np.ndarray] = None,
     ) -> None:
-        """Extracts word counts, computes signature via ProbMinHasher, and inserts into bands."""
+        # Extracts word counts, computes signature via ProbMinHasher, and inserts into bands.  
+        # Complexity: O(m) where m is the signature length.
+    
         if freqs is None:
             freqs = extract_term_frequencies(text, shingle_k=self.shingle_k, shingle_mode=self.shingle_mode)
         if signature is None:
@@ -93,7 +81,9 @@ class ProbMinHashLSH:
         cached_freqs: Optional[Dict[str, Dict[str, float]]] = None,
         cached_signatures: Optional[Dict[str, np.ndarray]] = None,
     ) -> float:
-        """Indexes all documents into LSH band hash tables."""
+        # Indexes all documents into LSH band hash tables.       
+        # Complexity: O(N * m). Returns the indexing elapsed time in milliseconds.
+        
         t0 = time.perf_counter()
         self.buckets = [{} for _ in range(self.num_bands)]
         self.colliding_buckets.clear()
@@ -109,7 +99,8 @@ class ProbMinHashLSH:
         return (time.perf_counter() - t0) * 1000.0
 
     def index_signatures(self, signatures: Dict[str, np.ndarray]) -> None:
-        """Indexes pre-computed signatures into LSH band hash tables."""
+        # Index pre-computed signatures into LSH band hash tables.
+
         for doc_id, sig in signatures.items():
             self.signatures[doc_id] = sig
             for b_idx in range(self.num_bands):
@@ -121,7 +112,8 @@ class ProbMinHashLSH:
                     self.colliding_buckets.add((b_idx, band_key))
 
     def get_candidate_pairs(self) -> Tuple[Set[Tuple[str, str]], Dict[Tuple[str, str], int]]:
-        """Instant O(1) candidate retrieval by checking only colliding buckets."""
+        # Extract candidate pairs by enumerating colliding documents in shared band buckets.
+
         candidates: Set[Tuple[str, str]] = set()
         collision_counts: Dict[Tuple[str, str], int] = {}
 
@@ -136,14 +128,15 @@ class ProbMinHashLSH:
         return candidates, collision_counts
 
     def find_all_matches(self, threshold: float = 0.25) -> Dict[str, Any]:
-        """Finds near-duplicate document pairs via LSH candidate filtering + verification."""
+        # Finds near-duplicate document pairs via LSH candidate filtering + verification.       
+        # Complexity: O(C * |V|) where C is candidate count and |V| is vocabulary size.
+        
         t0 = time.perf_counter()
         candidates, collision_counts = self.get_candidate_pairs()
         matches = []
         verified_candidates = []
 
         for doc_a, doc_b in sorted(candidates):
-            # Reuse estimate_similarity directly from probminhash.py
             est_sim = estimate_similarity(self.signatures[doc_a], self.signatures[doc_b]) * 100.0
             sim = probability_jaccard(self.term_freqs[doc_a], self.term_freqs[doc_b])
             record = {
@@ -180,10 +173,12 @@ class ProbMinHashLSH:
         self,
         query_text: str,
         threshold: float = 0.0,
-        top_k: int = 5,
+        top_k: Optional[int] = 5,
         query_sig: Optional[np.ndarray] = None,
+        exclude_doc_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Queries the indexed corpus with 1 document in sub-quadratic time."""
+        # Query the indexed corpus with 1 document.
+        
         t0 = time.perf_counter()
         q_freq = extract_term_frequencies(query_text, shingle_k=self.shingle_k, shingle_mode=self.shingle_mode)
         if query_sig is None:
@@ -197,6 +192,9 @@ class ProbMinHashLSH:
             bucket = self.buckets[b_idx].get(band_key)
             if bucket:
                 candidate_ids.update(bucket)
+
+        if exclude_doc_id:
+            candidate_ids.discard(exclude_doc_id)
 
         hits = []
         for doc_id in candidate_ids:
@@ -215,7 +213,8 @@ class ProbMinHashLSH:
         total_ms = (time.perf_counter() - t0) * 1000.0
 
         return {
-            "results": hits[:top_k],
+            "all_matches": hits,
+            "results": hits[:top_k] if top_k is not None else hits,
             "execution_ms": round(max(total_ms, 0.001), 3),
             "candidate_count": len(candidate_ids),
             "candidates_checked": len(candidate_ids),
@@ -223,5 +222,4 @@ class ProbMinHashLSH:
         }
 
 
-# Clean alias
 LSH = ProbMinHashLSH

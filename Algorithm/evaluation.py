@@ -1,28 +1,15 @@
-"""
-Algorithm/evaluation.py
-=======================
-Evaluation metrics for comparing Brute-Force (Ground Truth) vs. LSH.
-Calculates Precision, Recall (Accuracy), F1-Score, Speedup, and Trade-off summaries.
-Zero external algorithm libraries. 
-"""
-
 from __future__ import annotations
 
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 
 def evaluate_accuracy(
     retrieved_matches: List[Dict[str, Any]],
     ground_truth_matches: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
-    """Computes Recall (Accuracy), Precision, F1-Score, and identifies missed pairs.
+       #RECALL: the fraction of brute-force ground-truth matches
+       #retrieved by LSH: |Retrieved ∩ Ground Truth| / |Ground Truth|..
 
-      - Ground Truth = All true pairs found by exhaustive Brute Force.
-      - Retrieved = Pairs returned by LSH above threshold.
-      - Recall (Accuracy) = |Retrieved ∩ Ground Truth| / |Ground Truth|
-      - Precision = |Retrieved ∩ Ground Truth| / |Retrieved|
-      - Speedup = Brute Force Execution Time / LSH Execution Time
-    """
     def _to_key(m: Dict[str, Any]) -> Tuple[str, str]:
         if "doc_a" in m and "doc_b" in m:
             return (min(m["doc_a"], m["doc_b"]), max(m["doc_a"], m["doc_b"]))
@@ -35,14 +22,27 @@ def evaluate_accuracy(
     false_negatives = gt_keys - ret_keys  # Missed by LSH
     false_positives = ret_keys - gt_keys
 
-    recall = (len(true_positives) / len(gt_keys) * 100.0) if gt_keys else 100.0
+    has_ground_truth = len(gt_keys) > 0
+    if has_ground_truth:
+        recall = (len(true_positives) / len(gt_keys)) * 100.0
+        recall_val = round(recall, 1)
+        recall_display = f"{recall_val:.1f}%"
+    else:
+        # Zero reference matches in ground truth: Recall is N/A
+        recall = None
+        recall_val = 0.0
+        recall_display = "N/A (0 reference matches)"
+
     precision = (len(true_positives) / len(ret_keys) * 100.0) if ret_keys else 100.0
-    f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+    r_for_f1 = recall if recall is not None else 0.0
+    f1 = (2 * precision * r_for_f1 / (precision + r_for_f1)) if (precision + r_for_f1) > 0 else 0.0
 
     return {
-        "accuracy_pct": round(recall, 1),
-        "recall": round(recall, 1),
-        "recall_pct": round(recall, 1),
+        "recall": recall,
+        "recall_pct": recall_val,
+        "recall_display": recall_display,
+        "has_ground_truth": has_ground_truth,
+        "accuracy_pct": recall_val if has_ground_truth else 100.0,
         "precision": round(precision, 1),
         "precision_pct": round(precision, 1),
         "f1_score": round(f1, 2),
@@ -56,8 +56,8 @@ def evaluate_accuracy(
 
 
 def calculate_speedup(bf_time_ms: float, lsh_time_ms: float) -> Tuple[float, str]:
-    """Calculates speedup multiplier of LSH over Brute Force."""
-    bf = max(bf_time_ms, 0.001)
-    lsh = max(lsh_time_ms, 0.0001)
-    ratio = round(bf / lsh, 1)
+    # Calculates speedup multiplier of LSH over Brute Force.
+    bf = max(float(bf_time_ms), 0.0001)
+    lsh = max(float(lsh_time_ms), 0.0001)
+    ratio = round(bf / lsh, 2)
     return ratio, f"{ratio:.1f}x"

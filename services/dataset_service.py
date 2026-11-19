@@ -1,11 +1,7 @@
-"""
-services/dataset_service.py
-===========================
-Generates and manages the 100-Document Benchmark Corpus:
-  - 30% Real Data (30 Documents across Computer Science, Physics, Biology, History, Security)
-  - 70% Synthetic Data (70 Documents generated via Zipfian Power-Law & Calibrated Perturbations)
-Strictly adheres to the experimental setup in Otmar Ertl's ProbMinHash paper (IEEE TKDE 2022).
-"""
+# Generates and manages the 100-Document Benchmark Corpus:
+#  - 30% Real Data (30 Documents across Computer Science, Physics, Biology, History, Security)
+#  - 70% Synthetic Data (70 Documents generated via Zipfian Power-Law & Calibrated Perturbations)
+
 
 from __future__ import annotations
 
@@ -18,9 +14,7 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 CORPUS_FILE = DATA_DIR / "corpus.json"
 MANIFEST_FILE = DATA_DIR / "dataset_manifest.json"
 
-# ==============================================================================
 # 30 Real Domain Documents (30% Real Data)
-# ==============================================================================
 REAL_DOCUMENTS = [
     # Computer Science & AI
     (
@@ -322,10 +316,7 @@ REAL_DOCUMENTS = [
 ]
 
 
-# ==============================================================================
 # 70 Synthetic Documents Generator (70% Synthetic Data)
-# Evaluated strictly according to Otmar Ertl's ProbMinHash (IEEE TKDE 2022)
-# ==============================================================================
 
 # Vocabulary universe for Zipfian text synthesis
 ZIPF_VOCABULARY = [
@@ -343,11 +334,9 @@ ZIPF_VOCABULARY = [
 
 
 def generate_zipfian_synthetic_document(doc_id: str, num_words: int = 140, alpha: float = 1.15, seed: int = 42) -> Tuple[str, str, str, str]:
-    """Generates a synthetic document following Zipf's power-law distribution f(r) ~ 1 / r^alpha.
+    # Generates a synthetic document following Zipf's power-law distribution f(r) ~ 1 / r^alpha.
+    # Directly models the heavy-tailed frequency distributions used in Otmar Ertl's experimental evaluation of ProbMinHash (Section 3).
 
-    Directly models the heavy-tailed frequency distributions used in Otmar Ertl's
-    experimental evaluation of ProbMinHash (Section 3).
-    """
     rng = random.Random(seed)
     vocab = list(ZIPF_VOCABULARY)
     rng.shuffle(vocab)
@@ -383,11 +372,10 @@ def generate_perturbed_synthetic_document(
     target_similarity: float,
     seed: int = 42,
 ) -> Tuple[str, str, str, str]:
-    """Generates a calibrated synthetic near-duplicate with target probability overlap.
-
-    Applies controlled word substitution, insertion, and token swapping to produce
-    ground-truth near-duplicates in graded brackets (e.g., 95%, 75%, 50%, 25%).
-    """
+    # Generates a calibrated synthetic near-duplicate with target probability overlap.
+    # Applies controlled word substitution, insertion, and token swapping to produce
+    # ground-truth near-duplicates in graded brackets (e.g., 95%, 75%, 50%, 25%).
+    
     rng = random.Random(seed)
     words = base_text.split()
     total_words = len(words)
@@ -416,13 +404,12 @@ def generate_perturbed_synthetic_document(
 
 
 def build_100_document_corpus(seed: int = 42) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    """Builds the complete 100-document dataset:
-
-      - 30 Real Documents (30% Real Data)
-      - 35 Zipfian Synthetic Documents (35% Heavy-Tailed Power-Law)
-      - 35 Calibrated Perturbation Documents (35% Controlled Ground-Truth Overlap)
-    Total = 100 documents (Exactly 30% Real, 70% Synthetic).
-    """
+    #Builds the complete 100-document dataset:
+    #  - 30 Real Documents (30% Real Data)
+    #  - 35 Zipfian Synthetic Documents (35% Heavy-Tailed Power-Law)
+    #  - 35 Calibrated Perturbation Documents (35% Controlled Ground-Truth Overlap)
+    # Total = 100 documents (Exactly 30% Real, 70% Synthetic).
+    
     corpus_dict: Dict[str, Dict[str, Any]] = {}
     manifest_records: List[Dict[str, Any]] = []
 

@@ -1,17 +1,3 @@
-"""
-streamlit_app.py
-================
-Streamlit Web Application for Locality-Sensitive Hashing (LSH) vs. Brute-Force Baseline.
-Otmar Ertl's ProbMinHash for Probability Jaccard Similarity (IEEE TKDE 2022).
-
-Architecture Flow:
-  1. Algorithm.preprocessing : clean_text, extract_term_frequencies, probability_jaccard
-  2. Algorithm.brute_force   : brute_force_all_pairs, brute_force_query
-  3. Algorithm.lsh           : LSH, ProbMinHashLSH (Banding & Pruning)
-  4. Algorithm.probminhash   : ProbMinHasher, estimate_similarity
-  5. Algorithm.evaluation    : evaluate_accuracy, calculate_speedup
-"""
-
 from __future__ import annotations
 
 import io
@@ -20,7 +6,6 @@ from typing import Dict, List, Tuple
 import pandas as pd
 import streamlit as st
 
-# Safe optional file extractors
 try:
     import pypdf
 except ImportError:
@@ -31,7 +16,6 @@ try:
 except ImportError:
     docx = None
 
-# Pure pipeline imports in strict logical order
 from Algorithm.preprocessing import extract_term_frequencies, probability_jaccard
 from Algorithm.brute_force import brute_force_all_pairs, brute_force_query
 from Algorithm.lsh import LSH, ProbMinHashLSH
@@ -39,9 +23,8 @@ from Algorithm.probminhash import ProbMinHasher, estimate_similarity
 from Algorithm.evaluation import evaluate_accuracy, calculate_speedup
 from services.dataset_service import load_corpus, get_dataset_stats
 
-# ==============================================================================
+
 # Page Configuration & Styling
-# ==============================================================================
 st.set_page_config(
     page_title="Resemble Similarity Search System",
     layout="wide",
@@ -80,12 +63,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ==============================================================================
 # Helper Functions & Cached Resources
-# ==============================================================================
 @st.cache_resource
 def get_benchmark_corpus():
-    """Loads the 100 documents benchmark corpus and pre-indexes LSH."""
+    # Loads the 100 documents benchmark corpus and pre-indexes LSH.
     docs, manifest = load_corpus()
     freqs = {d_id: extract_term_frequencies(text) for d_id, text in docs.items()}
     doc_ids = sorted(docs.keys())
@@ -101,7 +82,7 @@ def get_benchmark_corpus():
     lsh_low = ProbMinHashLSH(num_hashes=100, num_bands=50, hasher=hasher)   # r=2, threshold ~14%
     lsh_low.index_corpus(docs, cached_freqs=freqs)
 
-    # Compute top match for each document
+    # Computing top match for each document
     best_matches = {}
     for i in range(len(doc_ids)):
         id_a = doc_ids[i]
@@ -119,7 +100,7 @@ def get_benchmark_corpus():
 
 
 def style_lsh_status(status: str) -> str:
-    """Highlight retrieval status while keeping the text label visible."""
+    # Highlights retrieval status while keeping the text label visible.
     return {
         "Retrieved by LSH": "background-color: #dcfce7; color: #14532d;",
         "Missed by LSH": "background-color: #fee2e2; color: #7f1d1d;",
@@ -127,7 +108,7 @@ def style_lsh_status(status: str) -> str:
 
 
 def extract_uploaded_text(uploaded_file) -> str:
-    """Extracts text content from uploaded .txt, .pdf, or .docx file."""
+    # Extracts text content from uploaded .txt, .pdf, or .docx file.
     name = uploaded_file.name.lower()
     raw_bytes = uploaded_file.read()
     if name.endswith(".pdf"):
@@ -159,9 +140,7 @@ def get_shared_hasher():
     return ProbMinHasher(num_hashes=100, seed=42)
 
 
-# ==============================================================================
 # Main UI Layout
-# ==============================================================================
 st.title("Resemble Similarity Search System")
 st.caption("Compare exhaustive brute-force search with ProbMinHash locality-sensitive hashing (LSH).")
 
@@ -174,9 +153,8 @@ mode = st.radio(
 
 docs, manifest, corpus_freqs, doc_ids, best_matches, lsh_models = get_benchmark_corpus()
 
-# ==============================================================================
+
 # MODE 1: BENCHMARK CORPUS
-# ==============================================================================
 if mode == "Benchmark corpus":
     st.markdown("### Benchmark settings")
 
@@ -211,7 +189,7 @@ if mode == "Benchmark corpus":
         btn_placeholder.button("Processing...", disabled=True, use_container_width=True, key="btn_corpus_proc")
 
         with st.spinner("Processing comparisons with Brute Force & LSH..."):
-            # 1. Execution
+            # Execution
             if selected_doc_id == "ALL":
                 # Brute Force All Pairs
                 bf_res = brute_force_all_pairs(docs, threshold=threshold_val, cached_freqs=corpus_freqs)
@@ -220,27 +198,37 @@ if mode == "Benchmark corpus":
                 lsh_key = "low" if threshold_val < 0.35 else ("mid" if threshold_val < 0.60 else "high")
                 lsh_res = lsh_models[lsh_key].find_all_matches(threshold=threshold_val)
 
+                # Actual measured execution times
                 bf_time = max(bf_res["execution_ms"], 0.001)
                 lsh_time = max(lsh_res["search_ms"], 0.0005)
-                # Ensure LSH speedup is always maintained
-                if lsh_time >= bf_time:
-                    lsh_time = round(bf_time * 0.35, 3)
                 speedup_ratio, speedup = calculate_speedup(bf_time, lsh_time)
+                speed_label = f"{speedup} faster" if speedup_ratio >= 1.0 else f"{speedup} — LSH was slower"
 
                 eval_metrics = evaluate_accuracy(lsh_res["matches"], bf_res["matches"])
-                accuracy = eval_metrics["accuracy_pct"]
+                recall_str = eval_metrics["recall_display"]
 
                 bf_pair_keys = {(min(m["doc_a"], m["doc_b"]), max(m["doc_a"], m["doc_b"])): m for m in bf_res["matches"]}
                 lsh_pair_keys = {(min(m["doc_a"], m["doc_b"]), max(m["doc_a"], m["doc_b"])): m for m in lsh_res["matches"]}
                 missed_count = eval_metrics["false_negatives_count"]
 
                 # Render Takeaway
-                st.markdown(f"""
-                <div class="takeaway-card">
-                    Across all 100 documents (4,950 pairs), LSH is <strong>{speedup} faster</strong> than Brute Force 
-                    ({lsh_time:.2f} ms vs {bf_time:.2f} ms), achieving <strong>{accuracy}% accuracy</strong>.
-                </div>
-                """, unsafe_allow_html=True)
+                if eval_metrics["has_ground_truth"]:
+                    if speedup_ratio >= 1.0:
+                        takeaway_speed = f"LSH is <strong>{speedup} faster</strong> than Brute Force ({lsh_time:.2f} ms vs {bf_time:.2f} ms)"
+                    else:
+                        takeaway_speed = f"LSH took <strong>{lsh_time:.2f} ms</strong> vs Brute Force <strong>{bf_time:.2f} ms</strong> — Brute Force was faster here (index was prebuilt at startup)"
+                    st.markdown(f"""
+                    <div class="takeaway-card">
+                        Across all 100 documents (4,950 pairs), {takeaway_speed}, achieving <strong>{recall_str} recall</strong> of true ground-truth matches.
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div class="takeaway-card">
+                        Across all 100 documents (4,950 pairs), LSH search executed in <strong>{lsh_time:.2f} ms</strong> vs Brute Force {bf_time:.2f} ms. 
+                        <strong>No document pairs had similarity ≥ {int(threshold_val*100)}% (0 reference matches).</strong>
+                    </div>
+                    """, unsafe_allow_html=True)
 
                 # Render Metric Cards
                 c_bf, c_lsh = st.columns(2)
@@ -249,8 +237,8 @@ if mode == "Benchmark corpus":
                     <div class="metric-card-bf">
                         <h4>Brute Force (Ground Truth)</h4>
                         <p style="margin:0; font-size: 1.8rem; font-weight:700; color:#1e293b;">{bf_time:.2f} ms</p>
-                        <p style="color:#64748b; margin:0 0 10px 0;">Exhaustive 4,950 comparisons</p>
-                        <p style="margin:0; font-size:1.3rem; font-weight:600; color:#315978;">100.0% Accuracy</p>
+                        <p style="color:#64748b; margin:0 0 10px 0;">Exhaustive 4,950 pairwise comparisons</p>
+                        <p style="margin:0; font-size:1.3rem; font-weight:600; color:#315978;">100.0% Ground Truth</p>
                         <p style="color:#64748b; margin:0;">{len(bf_res['matches'])} True Pairs Found</p>
                     </div>
                     """, unsafe_allow_html=True)
@@ -259,31 +247,25 @@ if mode == "Benchmark corpus":
                     st.markdown(f"""
                     <div class="metric-card-lsh">
                         <h4>LSH (Locality-Sensitive Hashing)</h4>
-                        <p style="margin:0; font-size: 1.8rem; font-weight:700; color:#246565;">{lsh_time:.2f} ms <span style="font-size:1rem; color:#246565;">({speedup} faster)</span></p>
+                        <p style="margin:0; font-size: 1.8rem; font-weight:700; color:#246565;">{lsh_time:.2f} ms <span style="font-size:1rem; color:#246565;">({speed_label})</span></p>
                         <p style="color:#64748b; margin:0 0 10px 0;">Banded bucket lookup (Pruned {lsh_res['pruned_pct']}% pairs)</p>
-                        <p style="margin:0; font-size:1.3rem; font-weight:600; color:#246565;">{accuracy}% Accuracy</p>
+                        <p style="margin:0; font-size:1.3rem; font-weight:600; color:#246565;">{recall_str} Recall</p>
                         <p style="color:#64748b; margin:0;">Retrieved {eval_metrics['true_positives_count']} of {eval_metrics['ground_truth_count']} True Pairs</p>
                     </div>
                     """, unsafe_allow_html=True)
 
                 st.write("")
-                st.markdown("#### Performance comparison")
+                st.markdown("#### Evaluation metrics")
                 summary_df = pd.DataFrame([
-                    {"Metric": "Execution Time", "Brute Force": f"{bf_time:.2f} ms", "LSH": f"{lsh_time:.2f} ms", "Trade-off Outcome": f"Time: LSH < Brute Force ({speedup} speedup)"},
-                    {"Metric": "Accuracy", "Brute Force": "100.0% (Ground Truth)", "LSH": f"{accuracy}% (Approximate)", "Trade-off Outcome": "Accuracy: LSH ≤ Brute Force"},
-                    {"Metric": "Matches Found", "Brute Force": f"{len(bf_res['matches'])} true pairs", "LSH": f"{len(lsh_res['matches'])} candidate pairs", "Trade-off Outcome": f"LSH found {eval_metrics['true_positives_count']} of {eval_metrics['ground_truth_count']} true pairs ({missed_count} missed)"},
+                    {"Metric": "Recall", "Brute Force": "100.0% (Ground Truth)", "LSH": f"{recall_str}", "LSH Result": f"Retrieved {eval_metrics['true_positives_count']} of {eval_metrics['ground_truth_count']} true pairs"},
                 ])
                 st.table(summary_df)
 
                 # Unified Match Table
                 st.markdown("#### Matched Document Pairs")
-                filter_mode = st.radio("Show matches", ["All Matches", f"Missed by LSH Only ({missed_count})"], horizontal=True)
-
                 table_rows = []
                 for pair_key, m in bf_pair_keys.items():
                     is_found = pair_key in lsh_pair_keys
-                    if filter_mode.startswith("Missed") and is_found:
-                        continue
                     lsh_item = lsh_pair_keys.get(pair_key)
                     lsh_est = f"{lsh_item['estimated_similarity']:.1f}%" if lsh_item else "— (pruned)"
                     status_str = "Retrieved by LSH" if is_found else "Missed by LSH"
@@ -298,35 +280,59 @@ if mode == "Benchmark corpus":
                 if table_rows:
                     st.dataframe(pd.DataFrame(table_rows).style.map(style_lsh_status, subset=["Status in LSH"]), use_container_width=True)
                 else:
-                    st.info("No document pairs to display for this filter.")
+                    st.info("No document pairs met the similarity threshold.")
 
             else:
                 # Single Document Query
                 query_text = docs[selected_doc_id]
-                bf_raw = brute_force_query(query_text, docs, threshold=threshold_val, top_k=50, cached_freqs=corpus_freqs)
-                bf_hits = [r for r in bf_raw["results"] if r["doc_id"] != selected_doc_id]
+                bf_raw = brute_force_query(
+                    query_text,
+                    docs,
+                    threshold=threshold_val,
+                    top_k=None,
+                    cached_freqs=corpus_freqs,
+                    exclude_doc_id=selected_doc_id,
+                )
+                bf_hits = bf_raw["all_matches"]
 
                 lsh_key = "low" if threshold_val < 0.35 else ("mid" if threshold_val < 0.60 else "high")
-                lsh_raw = lsh_models[lsh_key].query(query_text, threshold=threshold_val, top_k=50)
-                lsh_hits = [r for r in lsh_raw["results"] if r["doc_id"] != selected_doc_id]
+                lsh_raw = lsh_models[lsh_key].query(
+                    query_text,
+                    threshold=threshold_val,
+                    top_k=None,
+                    exclude_doc_id=selected_doc_id,
+                )
+                lsh_hits = lsh_raw["all_matches"]
 
+                # Measured execution times
                 bf_time = max(bf_raw["execution_ms"], 0.001)
                 lsh_time = max(lsh_raw["execution_ms"], 0.0005)
-                if lsh_time >= bf_time:
-                    lsh_time = round(bf_time * 0.35, 3)
                 speedup_ratio, speedup = calculate_speedup(bf_time, lsh_time)
+                speed_label = f"{speedup} faster" if speedup_ratio >= 1.0 else f"{speedup} — LSH was slower"
 
+                # Evaluate complete sets of threshold-qualified matches
                 eval_metrics = evaluate_accuracy(lsh_hits, bf_hits)
-                accuracy = eval_metrics["accuracy_pct"]
+                recall_str = eval_metrics["recall_display"]
                 missed_count = eval_metrics["false_negatives_count"]
 
                 # Render Takeaway
-                st.markdown(f"""
-                <div class="takeaway-card">
-                    For document <code>{selected_doc_id}</code>, LSH is <strong>{speedup} faster</strong> than Brute Force 
-                    ({lsh_time:.2f} ms vs {bf_time:.2f} ms), achieving <strong>{accuracy}% accuracy</strong>.
-                </div>
-                """, unsafe_allow_html=True)
+                if eval_metrics["has_ground_truth"]:
+                    if speedup_ratio >= 1.0:
+                        takeaway_speed = f"LSH is <strong>{speedup} faster</strong> than Brute Force ({lsh_time:.2f} ms vs {bf_time:.2f} ms)"
+                    else:
+                        takeaway_speed = f"LSH took <strong>{lsh_time:.2f} ms</strong> vs Brute Force <strong>{bf_time:.2f} ms</strong> — Brute Force was faster here (index was prebuilt at startup)"
+                    st.markdown(f"""
+                    <div class="takeaway-card">
+                        For document <code>{selected_doc_id}</code>, {takeaway_speed}, achieving <strong>{recall_str} recall</strong>.
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div class="takeaway-card">
+                        For document <code>{selected_doc_id}</code>, LSH query executed in <strong>{lsh_time:.2f} ms</strong> vs Brute Force {bf_time:.2f} ms. 
+                        <strong>No corpus documents exceed {int(threshold_val*100)}% similarity with this document.</strong>
+                    </div>
+                    """, unsafe_allow_html=True)
 
                 # Metric Cards
                 c_bf, c_lsh = st.columns(2)
@@ -335,9 +341,9 @@ if mode == "Benchmark corpus":
                     <div class="metric-card-bf">
                         <h4>Brute Force (Ground Truth)</h4>
                         <p style="margin:0; font-size: 1.8rem; font-weight:700; color:#1e293b;">{bf_time:.2f} ms</p>
-                        <p style="color:#64748b; margin:0 0 10px 0;">Exhaustive scan of all 100 documents</p>
-                        <p style="margin:0; font-size:1.3rem; font-weight:600; color:#315978;">100.0% Accuracy</p>
-                        <p style="color:#64748b; margin:0;">{len(bf_hits)} Matches Found</p>
+                        <p style="color:#64748b; margin:0 0 10px 0;">Exhaustive scan of remaining 99 documents</p>
+                        <p style="margin:0; font-size:1.3rem; font-weight:600; color:#315978;">100.0% Ground Truth</p>
+                        <p style="color:#64748b; margin:0;">{len(bf_hits)} Reference Matches</p>
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -345,33 +351,27 @@ if mode == "Benchmark corpus":
                     st.markdown(f"""
                     <div class="metric-card-lsh">
                         <h4>LSH (Locality-Sensitive Hashing)</h4>
-                        <p style="margin:0; font-size: 1.8rem; font-weight:700; color:#246565;">{lsh_time:.2f} ms <span style="font-size:1rem; color:#246565;">({speedup} faster)</span></p>
+                        <p style="margin:0; font-size: 1.8rem; font-weight:700; color:#246565;">{lsh_time:.2f} ms <span style="font-size:1rem; color:#246565;">({speed_label})</span></p>
                         <p style="color:#64748b; margin:0 0 10px 0;">Banded bucket search</p>
-                        <p style="margin:0; font-size:1.3rem; font-weight:600; color:#246565;">{accuracy}% Accuracy</p>
+                        <p style="margin:0; font-size:1.3rem; font-weight:600; color:#246565;">{recall_str} Recall</p>
                         <p style="color:#64748b; margin:0;">Retrieved {eval_metrics['true_positives_count']} of {eval_metrics['ground_truth_count']} Matches</p>
                     </div>
                     """, unsafe_allow_html=True)
 
                 st.write("")
-                st.markdown("#### Performance comparison")
+                st.markdown("#### Evaluation metrics")
                 summary_df = pd.DataFrame([
-                    {"Metric": "Execution Time", "Brute Force": f"{bf_time:.2f} ms", "LSH": f"{lsh_time:.2f} ms", "Trade-off Outcome": f"Time: LSH < Brute Force ({speedup} speedup)"},
-                    {"Metric": "Accuracy", "Brute Force": "100.0% (Ground Truth)", "LSH": f"{accuracy}% (Approximate)", "Trade-off Outcome": "Accuracy: LSH ≤ Brute Force"},
-                    {"Metric": "Matches Found", "Brute Force": f"{len(bf_hits)} matches", "LSH": f"{len(lsh_hits)} matches", "Trade-off Outcome": f"LSH found {eval_metrics['true_positives_count']} of {eval_metrics['ground_truth_count']} true matches ({missed_count} missed)"},
+                    {"Metric": "Recall", "Brute Force": "100.0% (Ground Truth)", "LSH": f"{recall_str}", "LSH Result": f"Retrieved {eval_metrics['true_positives_count']} of {eval_metrics['ground_truth_count']} matches"},
                 ])
                 st.table(summary_df)
 
                 # Table of similar documents
                 st.markdown(f"#### Similar Documents to `{selected_doc_id}`")
                 lsh_map = {r["doc_id"]: r for r in lsh_hits}
-                filter_mode = st.radio("Show matches", ["All Matches", f"Missed by LSH Only ({missed_count})"], horizontal=True)
-
                 table_rows = []
                 for item in bf_hits:
                     d_id = item["doc_id"]
                     is_found = d_id in lsh_map
-                    if filter_mode.startswith("Missed") and is_found:
-                        continue
                     lsh_item = lsh_map.get(d_id)
                     lsh_est = f"{lsh_item['estimated_similarity']:.1f}%" if lsh_item else "— (pruned)"
                     table_rows.append({
@@ -391,52 +391,53 @@ if mode == "Benchmark corpus":
         btn_placeholder.button("Compare documents", type="primary", use_container_width=True, key="btn_corpus_done")
 
 
-# ==============================================================================
+
 # MODE 2: USER DOCUMENT UPLOAD (MINIMUM 2 REQUIRED)
-# ==============================================================================
 else:
     st.markdown("### Upload documents")
     st.markdown("Upload at least **2 documents** (`.txt`, `.pdf`, `.docx`) to compute exact Brute Force vs. fast LSH similarity.")
 
     uploaded_files = st.file_uploader(
-        "Choose documents",
+        "Choose files",
         type=["txt", "pdf", "docx"],
         accept_multiple_files=True,
         help="Upload 2 or more documents to compare their pairwise similarities.",
     )
 
-    col_up1, col_up2 = st.columns([3, 1])
-    with col_up1:
+    col_up_s, col_up_b = st.columns([3, 1])
+    with col_up_s:
         upload_threshold = st.slider(
-            "Similarity threshold (%)",
+            "Similarity threshold for uploads (%)",
             min_value=15,
             max_value=95,
             value=35,
             step=5,
+            help="Pairs with similarity ≥ threshold are classified as matches.",
+            key="slider_upload",
         ) / 100.0
 
-    with col_up2:
+    with col_up_b:
         st.write("")
         st.write("")
         up_btn_placeholder = st.empty()
         compare_upload_btn = up_btn_placeholder.button("Compare uploads", type="primary", use_container_width=True, key="btn_up_main")
 
-    # Empty State Requirement: If no files or <2 files uploaded, keep space clean and empty
+    # Empty State: If no files or <2 files uploaded, keep space clean and empty
     if not uploaded_files or len(uploaded_files) < 2:
         st.info("**No comparison results yet.** Please upload at least **2 documents** above and click **'Compare uploads'**.")
     elif compare_upload_btn:
         up_btn_placeholder.button("Processing...", disabled=True, use_container_width=True, key="btn_up_proc")
 
-        # Extract text from files
+        # Parse text from all uploaded documents
         uploaded_docs: Dict[str, str] = {}
         for f in uploaded_files:
             text = extract_uploaded_text(f)
             if text.strip():
                 fname = f.name
-                idx = 1
+                counter = 1
                 while fname in uploaded_docs:
-                    fname = f"{f.name}_{idx}"
-                    idx += 1
+                    fname = f"{f.name}_{counter}"
+                    counter += 1
                 uploaded_docs[fname] = text
 
         if len(uploaded_docs) < 2:
@@ -446,36 +447,51 @@ else:
                 # Extract term frequencies once
                 up_freqs = {d_id: extract_term_frequencies(text) for d_id, text in uploaded_docs.items()}
 
-                # 1. Brute Force
+                # Brute Force
                 bf_res = brute_force_all_pairs(uploaded_docs, threshold=upload_threshold, cached_freqs=up_freqs)
 
-                # 2. LSH (Isolated dedicated instance, pre-warmed hasher)
+                # LSH
                 num_bands = 50 if upload_threshold < 0.35 else (25 if upload_threshold < 0.60 else 20)
                 upload_lsh = ProbMinHashLSH(num_hashes=100, num_bands=num_bands, hasher=get_shared_hasher())
-                upload_lsh.index_corpus(uploaded_docs, cached_freqs=up_freqs)
+                
+                # Measure indexing construction time vs search time
+                idx_ms = upload_lsh.index_corpus(uploaded_docs, cached_freqs=up_freqs)
                 lsh_res = upload_lsh.find_all_matches(threshold=upload_threshold)
+                search_ms = lsh_res["search_ms"]
+                total_lsh_ms = idx_ms + search_ms
 
-                # Performance handling: LSH search time is strictly faster than Brute Force
+                # Actual measured execution times
                 bf_time = max(bf_res["execution_ms"], 0.001)
-                lsh_time = max(lsh_res["search_ms"], 0.0005)
-                if lsh_time >= bf_time:
-                    lsh_time = round(bf_time * 0.45, 3)
+                lsh_time = max(search_ms, 0.0005)
                 speedup_ratio, speedup = calculate_speedup(bf_time, lsh_time)
+                speed_label = f"{speedup} faster" if speedup_ratio >= 1.0 else f"{speedup} — LSH was slower"
 
                 eval_metrics = evaluate_accuracy(lsh_res["matches"], bf_res["matches"])
-                accuracy = eval_metrics["accuracy_pct"]
+                recall_str = eval_metrics["recall_display"]
 
                 bf_pair_keys = {(min(m["doc_a"], m["doc_b"]), max(m["doc_a"], m["doc_b"])): m for m in bf_res["matches"]}
                 lsh_pair_keys = {(min(m["doc_a"], m["doc_b"]), max(m["doc_a"], m["doc_b"])): m for m in lsh_res["matches"]}
                 missed_count = eval_metrics["false_negatives_count"]
 
             # Render Takeaway
-            st.markdown(f"""
-            <div class="takeaway-card">
-                Across {len(uploaded_docs)} uploaded documents ({bf_res['comparisons']} pairs), LSH is <strong>{speedup} faster</strong> 
-                ({lsh_time:.2f} ms vs {bf_time:.2f} ms) with <strong>{accuracy}% accuracy</strong>.
-            </div>
-            """, unsafe_allow_html=True)
+            if eval_metrics["has_ground_truth"]:
+                if speedup_ratio >= 1.0:
+                    takeaway_speed = f"LSH Search is <strong>{speedup} faster</strong> ({lsh_time:.2f} ms search vs {bf_time:.2f} ms Brute Force)"
+                else:
+                    takeaway_speed = f"LSH Search took <strong>{lsh_time:.2f} ms</strong> vs Brute Force <strong>{bf_time:.2f} ms</strong> — Brute Force was faster here (small corpus; LSH advantage grows with more documents)"
+                st.markdown(f"""
+                <div class="takeaway-card">
+                    Across {len(uploaded_docs)} uploaded documents ({bf_res['comparisons']} pairs), {takeaway_speed} with <strong>{recall_str} recall</strong>.
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class="takeaway-card">
+                    Across {len(uploaded_docs)} uploaded documents ({bf_res['comparisons']} pairs), LSH Search took <strong>{lsh_time:.2f} ms</strong> 
+                    vs Brute Force <strong>{bf_time:.2f} ms</strong>. 
+                    <strong>No uploaded pairs had similarity ≥ {int(upload_threshold*100)}% (0 reference matches).</strong>
+                </div>
+                """, unsafe_allow_html=True)
 
             # Metric Cards
             c_bf, c_lsh = st.columns(2)
@@ -484,8 +500,8 @@ else:
                 <div class="metric-card-bf">
                     <h4>Brute Force (Ground Truth)</h4>
                     <p style="margin:0; font-size: 1.8rem; font-weight:700; color:#1e293b;">{bf_time:.2f} ms</p>
-                    <p style="color:#64748b; margin:0 0 10px 0;">Evaluated all {bf_res['comparisons']} pairs</p>
-                    <p style="margin:0; font-size:1.3rem; font-weight:600; color:#315978;">100.0% Accuracy</p>
+                    <p style="color:#64748b; margin:0 0 10px 0;">Evaluated all {bf_res['comparisons']} pairs directly</p>
+                    <p style="margin:0; font-size:1.3rem; font-weight:600; color:#315978;">100.0% Ground Truth</p>
                     <p style="color:#64748b; margin:0;">{len(bf_res['matches'])} True Pairs Found</p>
                 </div>
                 """, unsafe_allow_html=True)
@@ -494,19 +510,17 @@ else:
                 st.markdown(f"""
                 <div class="metric-card-lsh">
                     <h4>LSH (Locality-Sensitive Hashing)</h4>
-                    <p style="margin:0; font-size: 1.8rem; font-weight:700; color:#246565;">{lsh_time:.2f} ms <span style="font-size:1rem; color:#246565;">({speedup} faster)</span></p>
-                    <p style="color:#64748b; margin:0 0 10px 0;">Banded bucket search</p>
-                    <p style="margin:0; font-size:1.3rem; font-weight:600; color:#246565;">{accuracy}% Accuracy</p>
+                    <p style="margin:0; font-size: 1.8rem; font-weight:700; color:#246565;">{lsh_time:.2f} ms search <span style="font-size:1rem; color:#246565;">({speed_label})</span></p>
+                    <p style="color:#64748b; margin:0 0 10px 0;">Indexing: {idx_ms:.2f} ms | Total: {total_lsh_ms:.2f} ms</p>
+                    <p style="margin:0; font-size:1.3rem; font-weight:600; color:#246565;">{recall_str} Recall</p>
                     <p style="color:#64748b; margin:0;">Retrieved {eval_metrics['true_positives_count']} of {eval_metrics['ground_truth_count']} True Pairs</p>
                 </div>
                 """, unsafe_allow_html=True)
 
             st.write("")
-            st.markdown("#### Performance comparison")
+            st.markdown("#### Evaluation metrics")
             summary_df = pd.DataFrame([
-                {"Metric": "Execution Time", "Brute Force": f"{bf_time:.2f} ms", "LSH": f"{lsh_time:.2f} ms", "Trade-off Outcome": f"Time: LSH < Brute Force ({speedup} speedup)"},
-                {"Metric": "Accuracy", "Brute Force": "100.0% (Ground Truth)", "LSH": f"{accuracy}% (Approximate)", "Trade-off Outcome": "Accuracy: LSH ≤ Brute Force"},
-                {"Metric": "Matches Found", "Brute Force": f"{len(bf_res['matches'])} true pairs", "LSH": f"{len(lsh_res['matches'])} candidate pairs", "Trade-off Outcome": f"LSH found {eval_metrics['true_positives_count']} of {eval_metrics['ground_truth_count']} true pairs ({missed_count} missed)"},
+                {"Metric": "Recall", "Brute Force": "100.0% (Ground Truth)", "LSH": f"{recall_str}", "LSH Result": f"Retrieved {eval_metrics['true_positives_count']} of {eval_metrics['ground_truth_count']} true pairs"},
             ])
             st.table(summary_df)
 

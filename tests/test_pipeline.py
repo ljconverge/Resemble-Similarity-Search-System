@@ -1,13 +1,4 @@
-"""
-tests/test_pipeline.py
-======================
-Integration tests for the pure from-scratch pipeline:
-  1. Algorithm.preprocessing
-  2. Algorithm.brute_force
-  3. Algorithm.lsh
-  4. Algorithm.probminhash
-  5. Algorithm.evaluation
-"""
+# Integration tests 
 
 import unittest
 from Algorithm.preprocessing import clean_text, extract_term_frequencies, probability_jaccard

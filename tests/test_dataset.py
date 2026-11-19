@@ -1,11 +1,8 @@
-"""
-tests/test_dataset.py
-=====================
-Validates that the dataset strictly conforms to the professor's requirements:
-- 70% synthetic data
-- 30% real data
-- Heavy-tailed Zipfian & calibrated similarity distributions as in Otmar Ertl (2022)
-"""
+# Validates that the dataset strictly conforms to:
+# - 70% synthetic data
+# - 30% real data
+# - Heavy-tailed Zipfian & calibrated similarity distributions as in Otmar Ertl (2022)
+
 
 import unittest
 from services.dataset_service import load_corpus, get_dataset_stats

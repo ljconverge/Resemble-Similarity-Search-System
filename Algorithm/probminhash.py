@@ -1,11 +1,3 @@
-"""
-Algorithm/probminhash.py
-========================
-Pure implementation of Otmar Ertl's ProbMinHash algorithm (IEEE TKDE 2022).
-Generates compact integer MinHash signatures for weighted word distributions.
-Zero external algorithm libraries.
-"""
-
 from __future__ import annotations
 
 import math
@@ -20,7 +12,6 @@ _STR_HASH_CACHE: Dict[Tuple[str, int], int] = {}
 
 
 def str_hash_32(token: str, seed: int = 42) -> int:
-    """Pure from-scratch 32-bit unsigned integer hash (FNV-1a with seed mixing)."""
     key = (token, seed)
     if key in _STR_HASH_CACHE:
         return _STR_HASH_CACHE[key]
@@ -35,11 +26,9 @@ def str_hash_32(token: str, seed: int = 42) -> int:
 
 
 class ProbMinHasher:
-    """ProbMinHash signature generator implementing Otmar Ertl's algorithm.
-    
-    Transforms word distributions into compact integer signature vectors of length `m`.
-    Theoretical Guarantee: P(sig_A[k] == sig_B[k]) = Probability_Jaccard(A, B).
-    """
+    # ProbMinHash signature generator implementing the Weighted Exponential Race principle.
+    # Transform word distributions into compact integer signature vectors of length `m`.
+    # Theoretical Guarantee (Ertl, 2022): P(sig_A[k] == sig_B[k]) = Probability_Jaccard(A, B).
 
     def __init__(self, num_hashes: int = 100, seed: int = 42) -> None:
         if num_hashes <= 0:
@@ -53,7 +42,7 @@ class ProbMinHasher:
         self.b_coeffs = rng.randint(0, PRIME_32 - 1, size=self.num_hashes, dtype=np.uint64)
 
     def compute_signature(self, weights_dict: Dict[str, float]) -> np.ndarray:
-        """Computes m-dimensional integer MinHash signature via exponential arrival times."""
+        # Compute m-dimensional integer MinHash signature via weighted exponential race times.
         if not weights_dict:
             return np.zeros(self.num_hashes, dtype=np.uint32)
 
@@ -82,13 +71,12 @@ class ProbMinHasher:
 
 
 def estimate_similarity(sig_a: np.ndarray, sig_b: np.ndarray) -> float:
-    """Estimates Probability Jaccard similarity as the fraction of matching hash slots."""
+    # Estimate Probability Jaccard similarity as the fraction of matching hash slots.
     if len(sig_a) == 0 or len(sig_b) == 0 or len(sig_a) != len(sig_b):
         return 0.0
     return float(np.mean(sig_a == sig_b))
 
 
-# Backwards compatibility aliases
 preprocess_text = clean_text
 
 

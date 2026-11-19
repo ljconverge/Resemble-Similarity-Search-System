@@ -1,9 +1,4 @@
-"""
-tests/test_probminhash.py
-=========================
-Unit tests for core Probability Jaccard and ProbMinHash mathematical properties
-based on Otmar Ertl (IEEE TKDE 2022).
-"""
+# Unit tests for core Probability Jaccard and ProbMinHash mathematical properties
 
 import unittest
 import math

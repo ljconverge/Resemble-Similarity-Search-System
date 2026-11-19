@@ -1,9 +1,3 @@
-"""
-tests/test_lsh.py
-=================
-Unit tests for ProbMinHashLSH and Brute-Force comparison engine.
-"""
-
 import unittest
 from Algorithm.brute_force import brute_force_all_pairs, brute_force_query
 from Algorithm.lsh import ProbMinHashLSH
